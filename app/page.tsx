@@ -1,65 +1,90 @@
-import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, BookA, Play, Route } from "lucide-react";
+import { lessons } from "@/lib/lessons";
+import { glossary } from "@/lib/glossary";
 
 export default function Home() {
+  const moduleCount = new Set(lessons.map((l) => l.module)).size;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="flex min-h-screen flex-col bg-canvas">
+      <main className="mx-auto flex w-full max-w-[760px] flex-1 flex-col justify-center px-6 py-20">
+        <div className="flex items-baseline gap-1.5">
+          <span className="font-mono text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">
+            codelog
+          </span>
+          <span className="font-mono text-xl text-faint sm:text-2xl">()</span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        <h1 className="mt-6 text-2xl font-extrabold leading-snug tracking-tight text-ink sm:text-[32px]">
+          読んで、動かして、書いて学ぶ
+          <br />
+          JavaScript
+        </h1>
+        <p className="mt-4 max-w-[560px] text-[15.5px] leading-[1.85] text-sub">
+          ブラウザの上でそのままコードを書いて実行できる、無料の JavaScript
+          学習サイト。全{moduleCount}モジュール・{lessons.length}
+          レッスンを順番に進めるだけで、変数からクラス・非同期処理まで、入門書一冊ぶんの基礎が身につく。
+        </p>
+
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <Link
+            href={`/lessons/${lessons[0].id}`}
+            className="flex h-12 items-center justify-center gap-2 rounded-full bg-accent px-7 text-[15px] font-bold text-white transition-opacity hover:opacity-90"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            学習を始める <ArrowRight size={17} />
+          </Link>
+          <Link
+            href="/glossary"
+            className="flex h-12 items-center justify-center gap-2 rounded-full border border-line bg-card px-7 text-[15px] font-bold text-ink transition-colors hover:border-accent hover:text-accent"
           >
-            Documentation
-          </a>
+            <BookA size={17} /> 用語集を見る
+          </Link>
+        </div>
+
+        <div className="mt-14 grid gap-4 sm:grid-cols-3">
+          <div className="rounded-2xl border border-line bg-card p-5">
+            <Play size={20} className="text-accent" />
+            <div className="mt-3 text-[15px] font-bold text-ink">
+              その場で実行
+            </div>
+            <p className="mt-1.5 text-[13.5px] leading-relaxed text-sub">
+              エディタに書いたコードをブラウザ内で安全に実行。環境構築ゼロで今すぐ始められる。
+            </p>
+          </div>
+          <div className="rounded-2xl border border-line bg-card p-5">
+            <Route size={20} className="text-accent" />
+            <div className="mt-3 text-[15px] font-bold text-ink">
+              体系的なカリキュラム
+            </div>
+            <p className="mt-1.5 text-[13.5px] leading-relaxed text-sub">
+              土台 → 一歩深く → データ処理 → 設計とモダンJS。{lessons.length}
+              レッスンを積み上げ式で。進捗は自動保存。
+            </p>
+          </div>
+          <div className="rounded-2xl border border-line bg-card p-5">
+            <BookA size={20} className="text-accent" />
+            <div className="mt-3 text-[15px] font-bold text-ink">
+              用語集つき
+            </div>
+            <p className="mt-1.5 text-[13.5px] leading-relaxed text-sub">
+              {glossary.length}
+              語の専門用語を検索して確認できる。レッスン本文の用語はタップでその場に定義が出る。
+            </p>
+          </div>
         </div>
       </main>
+
+      <footer className="border-t border-line py-6 text-center text-[12.5px] text-faint">
+        <a
+          href="https://github.com/ry071702-prog/codelog"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="transition-colors hover:text-accent"
+        >
+          GitHub — ry071702-prog/codelog
+        </a>
+      </footer>
     </div>
   );
 }

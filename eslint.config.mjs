@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // プロトタイプ（参照用・移植元の正）は lint 対象外
+    "codelog.jsx",
   ]),
 ]);
 
