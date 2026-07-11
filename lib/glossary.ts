@@ -9,7 +9,9 @@ export type GlossaryCategory =
   | "非同期"
   | "設計"
   | "Web"
-  | "Git/GitHub";
+  | "Git/GitHub"
+  | "開発現場"
+  | "AI";
 
 export const glossaryCategories: GlossaryCategory[] = [
   "基本",
@@ -20,6 +22,8 @@ export const glossaryCategories: GlossaryCategory[] = [
   "設計",
   "Web",
   "Git/GitHub",
+  "開発現場",
+  "AI",
 ];
 
 export interface GlossaryTerm {
@@ -868,6 +872,303 @@ git merge feature/glossary  # 作業ブランチを main に合流`,
       "手元で動くコードを、インターネット上の誰でもアクセスできる場所に配置する作業。codelog では GitHub に push するだけで Vercel が自動でビルドしてデプロイする（CD = 継続的デプロイ）。",
     example: `git push   # → Vercel が自動ビルド → 本番URLが更新される`,
     aliases: ["deploy"],
+  },
+  // ---------- 開発現場 ----------
+  {
+    slug: "terminal",
+    term: "ターミナル",
+    category: "開発現場",
+    oneLiner: "コマンドを文字で打ち込んでコンピュータを操作する画面。通称「黒い画面」。",
+    description:
+      "マウスの代わりに文字の命令（コマンド）でコンピュータを操作する画面。中で動いている解釈係をシェルと呼ぶ。開発では npm run dev や git push など、ほとんどの操作をここから行う。",
+    example: `cd codelog     # フォルダを移動
+npm run dev    # 開発サーバーを起動`,
+    aliases: ["シェル", "コマンドライン", "黒い画面"],
+  },
+  {
+    slug: "command-cli",
+    term: "コマンド / CLI",
+    category: "開発現場",
+    oneLiner: "ターミナルに打ち込む文字の命令。CLI はコマンドで操作する道具のこと。",
+    description:
+      "CLI（Command Line Interface）は、画面のボタンではなく文字の命令で使う道具の総称。git も npm も vercel も CLI。「コマンドを叩く」=「命令を打って実行する」の意味で使われる。",
+    example: `npm install    # ← これが「コマンド」
+git status`,
+    aliases: ["CLI"],
+  },
+  {
+    slug: "directory",
+    term: "ディレクトリとパス",
+    category: "開発現場",
+    oneLiner: "ディレクトリ=フォルダ。パス=その場所を表す住所文字列。",
+    description:
+      "エンジニアはフォルダをディレクトリと呼ぶ。パスは「どこにあるか」を表す文字列で、/ 区切りで書く。先頭が / なら絶対パス（ルートから）、そうでなければ相対パス（今いる場所から）。lib/lessons.ts のような表記もパス。",
+    example: `~/codelog/lib/lessons.ts   # ~ はホームディレクトリ
+./components/Sidebar.tsx   # . は「今いる場所」`,
+    aliases: ["ディレクトリ", "パス", "フォルダ"],
+  },
+  {
+    slug: "environment-setup",
+    term: "環境構築",
+    category: "開発現場",
+    oneLiner: "開発を始められる状態に PC を整えること。",
+    description:
+      "Node.js を入れる、npm install で依存を揃える、など「コードを書いて動かせる状態」を作る作業。初心者最初の壁と言われるが、codelog のようなブラウザ実行のサイトなら環境構築ゼロで学べる。",
+    example: `node -v        # Node.js が入っているか確認
+npm install    # プロジェクトの依存を揃える`,
+  },
+  {
+    slug: "package",
+    term: "パッケージと依存関係",
+    category: "開発現場",
+    oneLiner: "パッケージ=他人が作った再利用できるコード。依存=それを使っている関係。",
+    description:
+      "世界中の開発者が公開しているコード部品（パッケージ）を組み合わせて開発するのが現代の標準。自分のプロジェクトが使っているパッケージを依存関係（dependencies）と呼び、package.json に一覧が書かれる。",
+    example: `npm install lucide-react   # パッケージを追加
+# → package.json の dependencies に記録される`,
+    aliases: ["パッケージ", "依存関係", "dependencies"],
+  },
+  {
+    slug: "npm",
+    term: "npm",
+    category: "開発現場",
+    oneLiner: "JavaScript のパッケージを入れる・管理する道具。",
+    description:
+      "Node Package Manager。npm install でパッケージを取ってきて node_modules フォルダに置き、npm run ◯◯ で package.json に書いたスクリプトを実行する。似た道具に pnpm / yarn があるが、まずは npm だけでよい。",
+    example: `npm install        # 依存を全部入れる
+npm run dev        # 開発サーバー起動
+npm run build      # 本番ビルド`,
+    aliases: ["node_modules", "package.json"],
+  },
+  {
+    slug: "library-framework",
+    term: "ライブラリとフレームワーク",
+    category: "開発現場",
+    oneLiner: "ライブラリ=呼んで使う部品。フレームワーク=その上に乗って作る土台。",
+    description:
+      "ライブラリは自分のコードから呼び出す道具（例: アイコン集の lucide-react）。フレームワークは全体の構造を決める土台で、自分のコードがその流儀に乗る（例: React の上に立つ Next.js）。「主導権がどちらにあるか」が違い。",
+    aliases: ["ライブラリ", "フレームワーク"],
+  },
+  {
+    slug: "build",
+    term: "ビルド",
+    category: "開発現場",
+    oneLiner: "書いたコードを、配信できる形に変換・最適化する工程。",
+    description:
+      "TypeScript や JSX のような「開発用の書き方」を、ブラウザが解釈できる JS/HTML/CSS に変換し、小さく最適化する工程。npm run build で実行され、ビルドが失敗する=どこかにエラーがある、なので公開前の健康診断でもある。",
+    example: `npm run build
+# ✓ Compiled successfully ← これが通れば公開できる`,
+    aliases: ["build", "コンパイル"],
+  },
+  {
+    slug: "local-production",
+    term: "ローカルと本番",
+    category: "開発現場",
+    oneLiner: "ローカル=自分のPCの中だけ。本番=公開されて誰でも見られる環境。",
+    description:
+      "開発は「ローカル環境（localhost）で動かして確認 → 良ければ本番環境（production）へデプロイ」の往復。http://localhost:3000 の localhost は「自分のPC自身」、3000 はポート番号（同じPC内の窓口の番号）。ローカルは何を壊しても誰にも迷惑がかからない練習場。",
+    example: `npm run dev
+# → http://localhost:3000 （自分だけが見える）
+git push
+# → https://codelog-three.vercel.app （全世界に公開）`,
+    aliases: ["localhost", "ローカル環境", "本番環境", "ポート番号"],
+  },
+  {
+    slug: "server",
+    term: "サーバー",
+    category: "開発現場",
+    oneLiner: "リクエストを受けてデータやページを返す側のコンピュータ／プログラム。",
+    description:
+      "「ください（リクエスト）」を受けて「どうぞ（レスポンス）」を返す役。Webサイトを配信するのも、API でデータを返すのもサーバー。npm run dev で手元に立ち上がるのは開発用サーバー。",
+    aliases: ["リクエスト", "レスポンス"],
+  },
+  {
+    slug: "frontend-backend",
+    term: "フロントエンドとバックエンド",
+    category: "開発現場",
+    oneLiner: "フロント=ユーザーが見て触る側。バック=裏でデータや処理を担う側。",
+    description:
+      "フロントエンドはブラウザで動く画面側（HTML/CSS/JS、React など）、バックエンドはサーバー側の処理（API、データベース、認証など）。codelog は今フロントエンドだけで動いており、Phase 1 の AI チューターでバックエンド（API Route）が登場する予定。",
+    aliases: ["フロントエンド", "バックエンド"],
+  },
+  {
+    slug: "database",
+    term: "データベース",
+    category: "開発現場",
+    oneLiner: "データを永続的に保存・検索するための専用の仕組み。DB と略す。",
+    description:
+      "アプリのデータ（ユーザー、投稿、進捗など）を安全に保存して高速に探せる倉庫。localStorage が「個人のブラウザ内のメモ」なのに対し、DB はサーバー側にあり全ユーザーで共有できる。代表は PostgreSQL、MySQL、SQLite など。",
+    aliases: ["DB"],
+  },
+  {
+    slug: "env-var",
+    term: "環境変数",
+    category: "開発現場",
+    oneLiner: "コードの外に置く設定値。APIキーなどの秘密はここに入れる。",
+    description:
+      "実行環境ごとに変えたい値や、コードに直書きしてはいけない秘密（APIキー等）を置く場所。ローカルでは .env ファイルに書き、.gitignore で Git 管理から外す（=GitHub に上げない）。本番では Vercel の設定画面から登録する。",
+    example: `# .env（GitHub には絶対上げない）
+ANTHROPIC_API_KEY=sk-ant-...`,
+    aliases: [".env", "APIキー", "シークレット"],
+  },
+  {
+    slug: "log",
+    term: "ログ",
+    category: "開発現場",
+    oneLiner: "プログラムが動いた記録。調査の第一の手がかり。",
+    description:
+      "「いつ何が起きたか」をプログラムが書き残したもの。console.log の出力も、サーバーのアクセス記録も、ビルドの経過もぜんぶログ。何かおかしいときは「まずログを見る」がエンジニアの初動。codelog という名前もここから。",
+    aliases: ["log"],
+  },
+  {
+    slug: "bug-issue",
+    term: "バグとイシュー",
+    category: "開発現場",
+    oneLiner: "バグ=プログラムの不具合。イシュー=直したいこと・課題の管理単位。",
+    description:
+      "思い通りに動かない原因となる欠陥がバグ（虫）。GitHub にはイシュー（Issue）という「バグ報告・要望・タスクを1件ずつ管理する掲示板」があり、「イシューを立てる」=課題を登録すること。",
+    aliases: ["バグ", "イシュー", "issue"],
+  },
+  {
+    slug: "test",
+    term: "テスト",
+    category: "開発現場",
+    oneLiner: "コードが正しく動くことを自動で確かめる仕組み・コード。",
+    description:
+      "「この関数にこれを入れたらこれが返るはず」を検証するコードを書いておき、変更のたびに自動実行して壊れていないか確かめる。codelog のレッスンのクリア判定（check 関数）も小さなテストの一種。",
+    example: `// テストのイメージ
+expect(multiply(4, 5)).toBe(20);`,
+    aliases: ["ユニットテスト"],
+  },
+  {
+    slug: "refactoring",
+    term: "リファクタリング",
+    category: "開発現場",
+    oneLiner: "動きは変えずに、コードの中身を読みやすく整理し直すこと。",
+    description:
+      "機能追加ではなく「同じ動きのまま綺麗にする」作業。変数名を分かりやすくする、重複をまとめる、長い関数を分割するなど。動きが変わらないことを保証するためにテストとセットで行うのが定石。",
+  },
+  {
+    slug: "code-review",
+    term: "コードレビュー",
+    category: "開発現場",
+    oneLiner: "他の人が書いたコードを読んで、問題や改善点を指摘し合うこと。",
+    description:
+      "主にプルリクエスト上で行われる。バグの早期発見だけでなく、知識共有や書き方を揃える目的もある。指摘は人格でなくコードへのコメント、が大事な文化。LGTM（Looks Good To Me）=「良いと思います、承認」の定番略語。",
+    aliases: ["レビュー", "LGTM"],
+  },
+  {
+    slug: "linter",
+    term: "lint / リンター",
+    category: "開発現場",
+    oneLiner: "コードの怪しい書き方やスタイル違反を自動検出する道具。",
+    description:
+      "実行しなくても分かる問題（使っていない変数、危険な書き方、スタイル不統一）を機械的に指摘してくれる。JS/TS では ESLint が定番。「lint を通す」=指摘ゼロにすること。フォーマット（見た目の整形）は Prettier が担うことが多い。",
+    example: `npm run lint   # コードの静的チェック`,
+    aliases: ["ESLint", "リンター"],
+  },
+  {
+    slug: "ci-cd",
+    term: "CI/CD",
+    category: "開発現場",
+    oneLiner: "push のたびにテスト・ビルド・デプロイを自動で回す仕組み。",
+    description:
+      "CI（継続的インテグレーション）は push のたびに自動でテストやビルドを走らせて壊れていないか確認すること、CD（継続的デリバリー/デプロイ）は合格したら自動で本番反映まですること。codelog の「push すると Vercel が自動デプロイ」はまさに CD。GitHub Actions が代表的な CI サービス。",
+    aliases: ["CI", "CD", "GitHub Actions"],
+  },
+  {
+    slug: "markdown",
+    term: "Markdown",
+    category: "開発現場",
+    oneLiner: "# や - などの記号で文書を書く軽量フォーマット。README の標準。",
+    description:
+      "# 見出し、- 箇条書き、**太字**、```コードブロック``` のような記号で構造を表す書き方。GitHub の README・イシュー・PR、そして AI とのチャットの多くがこれで書かれている。ファイルの拡張子は .md。",
+    example: `# 見出し
+- 箇条書き
+**太字** と \`コード\``,
+    aliases: ["README"],
+  },
+  {
+    slug: "regex",
+    term: "正規表現",
+    category: "開発現場",
+    oneLiner: "文字列のパターンを表す記法。検索・検証の強力な道具。",
+    description:
+      "「console.log という文字を含む」「数字が3桁続く」のようなパターンを /.../ の記法で表す。JS では /pattern/.test(文字列) でマッチ判定できる。codelog のクリア判定も正規表現を使っている。読めると強いが、最初は「そういう記法がある」と知っていれば十分。",
+    example: `/console\\.log/.test(code)   // code に console.log を含む？
+/^[0-9]+$/.test("123")      // 全部数字？ → true`,
+    aliases: ["regex"],
+  },
+  // ---------- AI ----------
+  {
+    slug: "llm",
+    term: "LLM（大規模言語モデル）",
+    category: "AI",
+    oneLiner: "大量の文章で訓練された、文章を理解・生成する AI。生成AI の中核。",
+    description:
+      "ChatGPT や Claude、Gemini の中身。次に来る言葉を予測する仕組みを極限まで大きくしたもので、会話・要約・翻訳・コード生成までこなす。「モデル」は訓練済みの AI 本体のことで、モデルごとに性能や得意分野が違う。",
+    aliases: ["生成AI", "大規模言語モデル", "モデル"],
+  },
+  {
+    slug: "prompt",
+    term: "プロンプト",
+    category: "AI",
+    oneLiner: "AI への指示・入力文。書き方しだいで出力の質が大きく変わる。",
+    description:
+      "AI に渡す指示のこと。目的・条件・例を具体的に書くほど狙った出力に近づく（プロンプトを設計する技術をプロンプトエンジニアリングと呼ぶ）。「システムプロンプト」は会話全体の前提として最初に仕込まれる指示のこと。",
+    aliases: ["システムプロンプト", "プロンプトエンジニアリング"],
+  },
+  {
+    slug: "token",
+    term: "トークン",
+    category: "AI",
+    oneLiner: "AI が文章を処理する最小単位。料金や上限の数え方でもある。",
+    description:
+      "LLM は文章をトークンという細切れ（日本語なら1〜2文字、英語なら単語の断片程度）に分けて処理する。API の料金は入出力のトークン数で決まり、「トークンを消費する」=それだけ処理・課金されるという意味。※Web開発で出てくる認証トークン（ログイン証明の文字列）は別物。",
+    aliases: ["token"],
+  },
+  {
+    slug: "context",
+    term: "コンテキスト",
+    category: "AI",
+    oneLiner: "AI が「いま覚えている」会話や資料の範囲。上限がある。",
+    description:
+      "LLM が一度に参照できる情報の範囲（コンテキストウィンドウ）。会話が長くなると古い内容が入り切らなくなり、AI が前の話を忘れたように見えるのはこのため。開発AIに「このファイルを読んで」と渡すのは、コンテキストに情報を入れる行為。",
+    aliases: ["コンテキストウィンドウ", "context"],
+  },
+  {
+    slug: "hallucination",
+    term: "ハルシネーション",
+    category: "AI",
+    oneLiner: "AI がもっともらしい嘘を自信満々に出力すること。",
+    description:
+      "存在しない関数、実在しない URL、間違った事実を「それっぽく」生成してしまう現象。AI の出力は必ず動かして・調べて検証するのが基本姿勢。コードなら実行とテスト、事実なら一次情報の確認で防ぐ。",
+  },
+  {
+    slug: "ai-agent",
+    term: "AIエージェント",
+    category: "AI",
+    oneLiner: "指示を受けて、自分で手順を考えツールを使いながらタスクを進める AI。",
+    description:
+      "1回の質問応答で終わらず、「ファイルを読む→コードを書く→実行して確かめる→直す」のような複数ステップを自律的に回す AI のこと。Claude Code や Codex のようなコーディングエージェントは、ターミナルやエディタを操作しながら開発を進める。",
+    aliases: ["エージェント", "コーディングエージェント", "Claude Code"],
+  },
+  {
+    slug: "mcp",
+    term: "MCP",
+    category: "AI",
+    oneLiner: "AI に外部ツールやデータへの接続口を生やすための共通規格。",
+    description:
+      "Model Context Protocol。「AI からブラウザを操作する」「AI からカレンダーを読む」のような外部連携を、共通の作法でつなげる仕組み。対応ツールを MCP サーバーとして登録すると、AI がそれを道具として使えるようになる。",
+  },
+  {
+    slug: "rate-limit",
+    term: "レート制限",
+    category: "AI",
+    oneLiner: "一定時間に使える回数・量の上限。API 全般にある。",
+    description:
+      "「1分間に◯回まで」「1日◯トークンまで」のような利用上限。AI API に限らず Web API 全般にあり、超えると 429 エラー（Too Many Requests）が返る。アプリ側では回数を数えて制限したり、時間を置いて再試行（リトライ）したりして付き合う。",
+    aliases: ["rate limit", "429"],
   },
 ];
 
