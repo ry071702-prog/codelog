@@ -24,10 +24,17 @@ async function runCode(code) {
   const fetchUsers = () => new Promise((res) => setTimeout(() => res([
     { name: "Aoi", age: 24 }, { name: "Ken", age: 31 }, { name: "Mei", age: 28 },
   ]), 250));
+  const fetchPosts = () => new Promise((res) => setTimeout(() => res([
+    { author: "Aoi", title: "朝のコーヒー記録" },
+    { author: "Ken", title: "週末の登山ログ" },
+    { author: "Aoi", title: "読書メモ #12" },
+    { author: "Mei", title: "自作キーボード日記" },
+    { author: "Ken", title: "ランニング 5km" },
+  ]), 250));
   try {
     // eslint-disable-next-line no-new-func
-    const fn = new Function("console", "fetchUsers", `return (async () => {\n${code}\n})();`);
-    await fn(sandboxConsole, fetchUsers);
+    const fn = new Function("console", "fetchUsers", "fetchPosts", `return (async () => {\n${code}\n})();`);
+    await fn(sandboxConsole, fetchUsers, fetchPosts);
   } catch (e) {
     logs.push({ type: "error", text: String(e && e.message ? e.message : e) });
   }
@@ -37,6 +44,8 @@ async function runCode(code) {
 // ---------- レッスン ----------
 const M1 = "MODULE 01 — 土台";
 const M2 = "MODULE 02 — 一歩深く";
+const M3 = "MODULE 03 — データを自在に";
+const M4 = "MODULE 04 — 設計とモダンJS";
 const lessons = [
   {
     id: "hello", module: M1, title: "はじめの一歩",
@@ -411,9 +420,393 @@ console.log(users[0].name);`,
       check: (logs, code) => logs.some((l) => l.type === "log") && /await/.test(code),
     },
   },
+  {
+    id: "strings", module: M3, title: "文字列を操る",
+    paras: [
+      "文字列はデータ処理の主役。メソッド（値にくっついた関数）で加工する。よく使うのは trim（前後の空白除去）、toUpperCase / toLowerCase、includes（含む？）、split（切り分けて配列に）、replaceAll（置換）。",
+      "大事な性質がひとつ：文字列のメソッドは元の値を変えず、新しい文字列を返す。",
+    ],
+    points: ["「メソッド」= 値にくっついた関数。文字列.メソッド名() で呼ぶ", "split は文字列 → 配列への入口。データ処理で多用する"],
+    example: `const raw = "  JavaScript is Fun  ";
+const s = raw.trim();                    // 前後の空白を除去
+
+console.log(s.toUpperCase());
+console.log(s.includes("Fun"));          // true
+console.log(s.split(" "));               // 単語の配列
+console.log(s.replaceAll("Fun", "Powerful"));`,
+    task: {
+      prompt: "文字列 csv = \"apple,banana,grape\" を split(\",\") で配列にして、要素数と2番目の要素を出力しよう。",
+      starter: `const csv = "apple,banana,grape";
+const items = csv.split(",");
+
+console.log(items.length);
+console.log(items[1]);`,
+      hint: "split(\",\") がカンマで切り分ける。items[1] は2番目（0から数えるため）。",
+      check: (logs, code) => logs.some((l) => l.type === "log") && /\.split\(/.test(code),
+    },
+  },
+  {
+    id: "math", module: M3, title: "数値と Math",
+    paras: [
+      "数値まわりの道具箱が Math。丸め（round / floor / ceil）、最大最小（max / min）、乱数（random）などが揃っている。",
+      "小数の表示桁を揃えるのは toFixed(桁数)。ただし返り値は文字列になる点に注意。逆に文字列を数値にするのは Number()。",
+    ],
+    points: ["Math.random() は 0以上1未満。サイコロは Math.floor(Math.random() * 6) + 1", "toFixed の返り値は文字列"],
+    example: `console.log(Math.round(3.6));        // 4
+console.log(Math.max(10, 25, 7));    // 25
+
+const avg = (80 + 92 + 77) / 3;
+console.log(avg.toFixed(1));         // 83.0
+
+console.log(Math.floor(Math.random() * 6) + 1);  // サイコロ`,
+    task: {
+      prompt: "scores = [3.7, 8.2, 5.1] の平均を reduce で求めて、toFixed(1) で出力しよう（M02の復習込み）。",
+      starter: `const scores = [3.7, 8.2, 5.1];
+
+const avg = scores.reduce((sum, s) => sum + s, 0) / scores.length;
+console.log(avg.toFixed(1));`,
+      hint: "合計は reduce、平均は length で割る。toFixed(1) で小数1桁に揃う。",
+      check: (logs, code) => logs.some((l) => l.type === "log") && /(toFixed|Math\.)/.test(code),
+    },
+  },
+  {
+    id: "arr2", module: M3, title: "配列メソッド続編 — 検索と並べ替え",
+    paras: [
+      "「探す」道具：find（条件に合う最初の1件）、some（1つでも合う？）、every（全部合う？）。",
+      "「並べ替え」は sort。ただし数値は比較関数 (a, b) => a - b が必須で、書かないと文字として並ぶ罠がある。もうひとつ、sort は元の配列を書き換える（破壊的）ので、元を守りたいときは [...arr].sort(...) とコピーしてから並べ替える。",
+    ],
+    points: ["(a, b) => a - b で昇順、(a, b) => b - a で降順", "find は見つからないと undefined を返す"],
+    example: `const users = [
+  { name: "Aoi", age: 24 },
+  { name: "Ken", age: 31 },
+  { name: "Mei", age: 28 },
 ];
 
-const roadmap = ["Module 03 — ブラウザとDOM", "Module 04 — TypeScript", "Module 05 — React / Next.js"];
+const over30 = users.find((u) => u.age >= 30);
+console.log(over30.name);                       // Ken
+console.log(users.some((u) => u.age < 25));     // true
+console.log(users.every((u) => u.age >= 20));   // true
+
+const ages = users.map((u) => u.age);
+console.log([...ages].sort((a, b) => b - a));   // 降順`,
+    task: {
+      prompt: "nums = [40, 5, 100, 23] を昇順に並べ替えて出力しよう（元の配列は壊さずに）。",
+      starter: `const nums = [40, 5, 100, 23];
+
+const sorted = [...nums].sort((a, b) => a - b);
+console.log(sorted);`,
+      hint: "(a, b) => a - b が昇順。b - a に変えると降順になるのも試してみよう。",
+      check: (logs, code) => logs.some((l) => l.type === "log") && /\.sort/.test(code),
+    },
+  },
+  {
+    id: "mapset", module: M3, title: "Map と Set",
+    paras: [
+      "Set は「重複しない値の集まり」。同じ値は1つしか入らないので、重複除去の定番道具になる。",
+      "Map は「キーと値のペア」の入れ物。オブジェクトに似ているが、追加・削除が頻繁な場面や、個数（size）を扱う場面で便利。",
+    ],
+    points: ["[...new Set(配列)] が重複除去のイディオム", "Map は set / get / has / size で操作する"],
+    example: `const tags = ["js", "web", "js", "app", "web"];
+const unique = [...new Set(tags)];
+console.log(unique);              // ["js","web","app"]
+
+const stock = new Map();
+stock.set("apple", 3);
+stock.set("banana", 5);
+console.log(stock.get("apple"));  // 3
+console.log(stock.size);          // 2`,
+    task: {
+      prompt: "numbers = [1, 2, 2, 3, 3, 3] から Set を使って重複を除いた配列を作り、出力しよう。",
+      starter: `const numbers = [1, 2, 2, 3, 3, 3];
+
+const unique = [...new Set(numbers)];
+console.log(unique);`,
+      hint: "new Set(numbers) で重複が消え、[... ] で配列に戻す。",
+      check: (logs, code) => logs.some((l) => l.type === "log") && /new Set/.test(code),
+    },
+  },
+  {
+    id: "json", module: M3, title: "JSON — データを文字にして運ぶ",
+    paras: [
+      "JSON は「データを文字列にして運ぶ・保存する」ための世界共通フォーマット。API通信も、ブラウザへの保存も、中身はほぼ全部 JSON 文字列でできている。",
+      "JSON.stringify(値) で文字列化、JSON.parse(文字列) で元のデータに復元。この往復がすべての基本。",
+    ],
+    points: ["通信・保存の直前に stringify、受け取った直後に parse", "stringify(値, null, 2) とすると人間が読みやすい整形付きになる"],
+    example: `const user = { name: "Aoi", age: 24 };
+
+const text = JSON.stringify(user);
+console.log(text);             // '{"name":"Aoi","age":24}'
+console.log(typeof text);      // string（ただの文字列になった）
+
+const back = JSON.parse(text);
+console.log(back.name);        // Aoi（オブジェクトに戻った）`,
+    task: {
+      prompt: "好きなオブジェクトを stringify → parse で往復させて、復元後のプロパティを1つ出力しよう。",
+      starter: `const item = { title: "ノート", price: 300 };
+
+const text = JSON.stringify(item);
+const restored = JSON.parse(text);
+
+console.log(text);
+console.log(restored.price);`,
+      hint: "stringify で文字列に、parse でオブジェクトに戻る。typeof text も見てみると型の変化がわかる。",
+      check: (logs, code) => logs.some((l) => l.type === "log") && /JSON\.stringify/.test(code) && /JSON\.parse/.test(code),
+    },
+  },
+  {
+    id: "date", module: M3, title: "日付と時間",
+    paras: [
+      "日付と時間は new Date() で扱う。現在時刻は new Date()、特定の日付は new Date(\"2026-01-01\") のように作り、getFullYear() などで部品を取り出す。",
+      "有名な罠がひとつ：getMonth() は 0 始まり（1月が 0）。+1 を忘れずに。また、日付同士の引き算はミリ秒の差になるので、日数にしたければ 1000 * 60 * 60 * 24 で割る。",
+    ],
+    points: ["getMonth() + 1 が実際の月", "日付 − 日付 = ミリ秒差。日数換算は ÷ (1000*60*60*24)"],
+    example: `const now = new Date();
+console.log(now.getFullYear());
+console.log(now.getMonth() + 1);   // 0始まりなので +1
+
+const start = new Date("2026-01-01");
+const days = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+console.log(\`今年が始まって\${days}日\`);`,
+    task: {
+      prompt: "自分の誕生日を new Date(\"YYYY-MM-DD\") で作り、生まれてから今日までの日数を計算して出力しよう。",
+      starter: `const birth = new Date("2000-01-01");
+const now = new Date();
+
+const days = Math.floor((now - birth) / (1000 * 60 * 60 * 24));
+console.log(\`生まれてから\${days}日\`);`,
+      hint: "日付の引き算はミリ秒。1000*60*60*24 で割ると日数になる。誕生日を自分のものに変えよう。",
+      check: (logs, code) => logs.some((l) => l.type === "log") && /new Date/.test(code),
+    },
+  },
+  {
+    id: "ex1", module: M3, title: "ミニ演習 ① — 成績集計",
+    paras: [
+      "ここまでの M03 を総動員する章末演習。データの集計は「絞る → 並べる → 出力する → まとめる」の流れで組む。実務のデータ処理もほぼこの型。",
+      "下のコードは途中まで完成している。TODO の部分を自分で書いて仕上げよう。",
+    ],
+    points: ["書けない部分が出たら、その概念のレッスンに戻ってOK（それが正しい使い方）"],
+    example: `// 流れの見本: 絞る → 並べる → 出力
+const items = [
+  { name: "A", score: 62 },
+  { name: "B", score: 88 },
+];
+const passed = items.filter((i) => i.score >= 70);
+const ranked = [...passed].sort((a, b) => b.score - a.score);
+ranked.forEach((i) => console.log(\`\${i.name}: \${i.score}\`));`,
+    task: {
+      prompt: "合格者（70点以上）の一覧表示までは完成している。TODO 部分に「全員の平均点」を toFixed(1) で出力するコードを書き足そう。",
+      starter: `const students = [
+  { name: "Aoi", score: 82 },
+  { name: "Ken", score: 65 },
+  { name: "Mei", score: 91 },
+  { name: "Yu",  score: 74 },
+];
+
+// 1) 70点以上に絞って、高い順に並べる
+const passed = [...students]
+  .filter((s) => s.score >= 70)
+  .sort((a, b) => b.score - a.score);
+
+// 2) 一覧を出力
+passed.forEach((s) => console.log(\`\${s.name}: \${s.score}点\`));
+
+// 3) TODO: 全員(students)の平均点を toFixed(1) で出力する`,
+      hint: "平均 = students.reduce((sum, s) => sum + s.score, 0) / students.length。それを console.log(avg.toFixed(1)) で出力。",
+      check: (logs, code) => logs.filter((l) => l.type === "log").length >= 4 && /filter/.test(code) && /sort/.test(code),
+    },
+  },
+  {
+    id: "closure", module: M4, title: "クロージャ — 関数が記憶を持つ",
+    paras: [
+      "関数は、自分が作られた場所の変数を「覚えて」いられる。外からは触れない変数に、返した内側の関数からだけは触れる——この性質をクロージャと呼ぶ。",
+      "「外から勝手に変えられない状態を持つ」ための重要な道具で、あとで学ぶ React の state も、根っこはこの仕組みの上に立っている。",
+    ],
+    points: ["内側の関数が、外側の変数を保持し続ける", "count に触れる手段は返した関数だけ = 安全"],
+    example: `const createCounter = () => {
+  let count = 0;              // 外からは見えない
+  return () => {
+    count = count + 1;        // でも、この関数からは触れる
+    return count;
+  };
+};
+
+const counter = createCounter();
+console.log(counter());   // 1
+console.log(counter());   // 2
+console.log(counter());   // 3`,
+    task: {
+      prompt: "createCounter を改造して、呼ぶたびに 10 ずつ増えるカウンタを作り、2回呼んで 10, 20 と出力しよう。",
+      starter: `const createCounter = () => {
+  let count = 0;
+  return () => {
+    count = count + 10;
+    return count;
+  };
+};
+
+const counter = createCounter();
+console.log(counter());
+console.log(counter());`,
+      hint: "増やす量を +10 に変えるだけ。createCounter() をもう1つ作ると、別々に数えられるのも確認できる。",
+      check: (logs, code) => logs.filter((l) => l.type === "log").length >= 2 && (code.match(/=>/g) || []).length >= 2,
+    },
+  },
+  {
+    id: "class", module: M4, title: "クラス — 設計図からオブジェクトを作る",
+    paras: [
+      "同じ形のオブジェクトをたくさん作るなら、設計図 = クラスを書いて new で量産する。constructor が初期化の処理、this は「いま作られている自分自身」を指す。",
+      "JS は関数だけでも十分書けるが、「ユーザー」「商品」のような概念のまとまりを表すときはクラスが読みやすい。",
+    ],
+    points: ["new クラス名(引数) でインスタンス（実体）が生まれる", "メソッド内の this.name = 自分自身の name"],
+    example: `class User {
+  constructor(name, age) {
+    this.name = name;
+    this.age = age;
+  }
+  introduce() {
+    return \`\${this.name}（\${this.age}歳）です\`;
+  }
+}
+
+const aoi = new User("Aoi", 24);
+const ken = new User("Ken", 31);
+console.log(aoi.introduce());
+console.log(ken.introduce());`,
+    task: {
+      prompt: "title と price を持つ class Product を作り、「◯◯は◯円」を返す describe() メソッドを実装して出力しよう。",
+      starter: `class Product {
+  constructor(title, price) {
+    this.title = title;
+    this.price = price;
+  }
+  describe() {
+    return \`「\${this.title}」は\${this.price}円\`;
+  }
+}
+
+const p = new Product("ノート", 300);
+console.log(p.describe());`,
+      hint: "this.title がこの商品自身の title。new Product(...) をもう1つ作って量産も試そう。",
+      check: (logs, code) => logs.some((l) => l.type === "log") && /class\s+\w+/.test(code),
+    },
+  },
+  {
+    id: "promise", module: M4, title: "Promise を理解する",
+    paras: [
+      "async / await の下で動いている本体が Promise ——「あとで値が届く」という約束のオブジェクト。M02 で使った await は、正確には「Promise の結果が届くまで待つ」という意味だった。ここでつながる。",
+      "new Promise で自作もできる。定番は「指定ミリ秒待つ」wait 関数で、時間差のある処理を組むときの基本部品になる。",
+    ],
+    points: ["await X =「X という Promise の結果が届くまで待つ」", "setTimeout(実行する関数, ミリ秒) が時限装置の役"],
+    example: `// ms ミリ秒待つ Promise を作る定番の関数
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+console.log("スタート");
+await wait(300);
+console.log("0.3秒たった");
+await wait(300);
+console.log("さらに0.3秒たった");`,
+    task: {
+      prompt: "wait を使って、「3」「2」「1」を 0.2 秒間隔でカウントダウン出力しよう。",
+      starter: `const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+console.log(3);
+await wait(200);
+console.log(2);
+await wait(200);
+console.log(1);`,
+      hint: "余裕があれば for ループ + await で書き直してみよう（同じ書き方でループ内でも待てる）。",
+      check: (logs, code) => logs.filter((l) => l.type === "log").length >= 3 && /new Promise/.test(code),
+    },
+  },
+  {
+    id: "parallel", module: M4, title: "並列で待つ — Promise.all",
+    paras: [
+      "await を縦に並べると「直列」= 前が終わるまで次が始まらない。互いに関係のない取得なら「並列」で同時に走らせたほうが速い。それをやるのが Promise.all。",
+      "配列で渡した Promise を全部同時に開始し、全部届いたら結果の配列が返ってくる。分割代入（M02）で受け取るときれいに書ける。",
+    ],
+    points: ["直列: await A; await B ／ 並列: await Promise.all([A, B])", "1つでも失敗すると全体が失敗扱いになる"],
+    example: `// fetchUsers / fetchPosts は少し時間のかかる擬似API
+const [users, posts] = await Promise.all([
+  fetchUsers(),
+  fetchPosts(),
+]);
+
+console.log(\`ユーザー: \${users.length}人\`);
+console.log(\`投稿: \${posts.length}件\`);`,
+    task: {
+      prompt: "Promise.all で両方を取得し、最初のユーザーの name と最初の投稿の title を出力しよう。",
+      starter: `const [users, posts] = await Promise.all([
+  fetchUsers(),
+  fetchPosts(),
+]);
+
+console.log(users[0].name);
+console.log(posts[0].title);`,
+      hint: "結果は渡した順番で返ってくる。[users, posts] の分割代入は M02 の復習。",
+      check: (logs, code) => logs.some((l) => l.type === "log") && /Promise\.all/.test(code),
+    },
+  },
+  {
+    id: "optional", module: M4, title: "?. と ?? — 安全に値へたどり着く",
+    paras: [
+      "深い場所の値を取りに行くとき、途中が undefined だとエラーで落ちる。?.（オプショナルチェーン）は「無ければそこで止まって undefined を返す」安全な道。",
+      "??（Null合体演算子）は「左が null / undefined のときだけ右を使う」。デフォルト値の定番で、|| と違って 0 や空文字を有効な値として通してくれる。",
+    ],
+    points: ["obj?.a?.b — 途中に無いものがあっても落ちない", "値 ?? デフォルト — null / undefined のときだけ右側が発動"],
+    example: `const user = {
+  name: "Aoi",
+  profile: { city: "Tokyo" },
+};
+const guest = { name: "Ken" };   // profile なし
+
+console.log(user.profile?.city);               // Tokyo
+console.log(guest.profile?.city);              // undefined（落ちない）
+console.log(guest.profile?.city ?? "未設定");   // 未設定
+
+const count = 0;
+console.log(count ?? 10);   // 0（?? は 0 を通す）`,
+    task: {
+      prompt: "profile を持たないオブジェクトから、?. と ?? を組み合わせて「未登録」と出力しよう。",
+      starter: `const member = { name: "Yu" };
+
+console.log(member.profile?.city ?? "未登録");`,
+      hint: "profile が無い → ?. が undefined を返す → ?? が右側を採用、という流れ。",
+      check: (logs, code) => logs.some((l) => l.type === "log") && (/\?\./.test(code) || /\?\?/.test(code)),
+    },
+  },
+  {
+    id: "ex2", module: M4, title: "ミニ演習 ② — 小さなデータの旅",
+    paras: [
+      "最終演習。並列取得 → データの突き合わせ → 集計 → 整形出力、まで通しでやる。これは実際のアプリの中身とほぼ同じ流れ。",
+      "TODO は「各ユーザーの投稿数を数える」部分。filter と length で書ける。",
+    ],
+    points: ["詰まったら該当レッスンに戻る。戻るのは後退じゃなく設計通り"],
+    example: `// 「突き合わせ」の見本: 名前が一致する要素を数える
+const posts = [{ author: "Aoi" }, { author: "Ken" }, { author: "Aoi" }];
+
+const aoiCount = posts.filter((p) => p.author === "Aoi").length;
+console.log(aoiCount);   // 2`,
+    task: {
+      prompt: "全ユーザーについて「名前: N件」の形で投稿数を出力しよう（TODO の1行を完成させる）。",
+      starter: `const [users, posts] = await Promise.all([
+  fetchUsers(),
+  fetchPosts(),
+]);
+
+console.log(\`\${users.length}人のユーザー、\${posts.length}件の投稿\`);
+
+users.forEach((u) => {
+  // TODO: この u の投稿数を posts から数えて count に入れる
+  const count = 0;
+  console.log(\`\${u.name}: \${count}件\`);
+});`,
+      hint: "const count = posts.filter((p) => p.author === u.name).length;",
+      check: (logs, code) => logs.filter((l) => l.type === "log").length >= 4 && /Promise\.all/.test(code) && /filter/.test(code),
+    },
+  },
+];
+
+const roadmap = ["Module 05 — ブラウザとDOM（プレビュー実行を追加予定）", "Module 06 — TypeScript", "Module 07 — React / Next.js"];
 
 // ---------- サイドバーの1項目 ----------
 function StepItem({ index, lesson, active, done, isLast, onClick }) {
@@ -547,7 +940,7 @@ function LessonContent({ lesson, code, setCode, output, ran, running, onRun, onR
             <div style={{ fontWeight: 800, color: "#0a7a64", fontSize: 15 }}>クリア！</div>
             <div style={{ color: "#2f6b5e", fontSize: 14, lineHeight: 1.7, marginTop: 2 }}>
               {isLastLesson
-                ? "Module 01–02 完走、おつかれさま。変数・関数・制御・データ構造・高階関数・エラー処理・非同期まで、JavaScript の考え方の土台がひと通り手に入った。次は実際に Web ページを動かす DOM、そして TypeScript → React。準備できたらチャットで「次いこう」と言って。"
+                ? "全4モジュール完走、おつかれさま。変数からクラス・非同期・並列処理まで、入門書一冊ぶんの JavaScript がここに入った。次の柱はブラウザを動かす DOM 編（画面プレビューつきで追加予定）、その先に TypeScript → React。準備ができたらチャットで「次いこう」と言って。"
                 : isModuleEnd
                   ? `${lesson.module} を完了。ここから ${nextModule} に入る。実務で効いてくる、一歩踏み込んだ内容。`
                   : "その調子。次のレッスンへ進もう。"}
