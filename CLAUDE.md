@@ -50,7 +50,8 @@ codelog/
 ├── app/
 │   ├── layout.tsx              # 共通レイアウト（サイドバー）
 │   ├── page.tsx                # トップ → 最初のレッスンへ誘導
-│   └── lessons/[id]/page.tsx   # レッスン画面（動的ルート）
+│   ├── lessons/[id]/page.tsx   # レッスン画面（動的ルート）
+│   └── glossary/page.tsx       # 用語集（検索・カテゴリ絞り込み）
 ├── components/
 │   ├── Sidebar.tsx
 │   ├── StepItem.tsx
@@ -59,6 +60,7 @@ codelog/
 │   └── ConsoleOutput.tsx
 ├── lib/
 │   ├── lessons.ts              # 全レッスンデータ（プロトから移植）
+│   ├── glossary.ts             # 用語集データ（用語/読み/定義/コード例/関連レッスン）
 │   ├── runner.ts               # Worker 実行エンジンのクライアント側
 │   └── progress.ts             # localStorage 進捗の save / load
 └── public/worker/runner.js     # 実行用 Worker 本体
@@ -118,6 +120,12 @@ codelog/
 - 学ぶ: useEffect、永続化、JSON.stringify / parse
 - ✍️: `lib/progress.ts` の save / load
 
+**Step 6.5: 用語集（専門用語を調べる・確認する）**
+- `lib/glossary.ts` に用語データ（用語 / 読み / カテゴリ / 一行定義 / 詳しい説明 / コード例 / 関連レッスンID）を定義し、`app/glossary/page.tsx` で一覧表示（検索・カテゴリ絞り込み）
+- レッスン本文中の専門用語はタップでその場にポップアップ定義を表示（読む流れを止めない）。詳細は用語集ページへリンク
+- 学ぶ: 検索フィルタ（filter / includes の実戦投入 = M2〜M3 の復習）、コンポーネントの再利用
+- ✍️: 検索の filter 部分
+
 **Step 7: 公開仕上げ**
 - metadata（タイトル・description・OGP）、モバイル表示確認、README 執筆
 - 学ぶ: Next.js metadata API
@@ -131,6 +139,7 @@ codelog/
 ## Phase 0 完了の定義（これが全部 ✓ なら公開完了）
 
 - [ ] 26 レッスンすべてが公開 URL 上で表示・実行できる
+- [ ] 用語集ページで専門用語を検索でき、レッスン本文中の用語タップで定義が出る
 - [ ] `while (true) {}` を実行してもページが固まらず、3 秒で停止メッセージが出る
 - [ ] レッスンをクリアしてリロードしても進捗が残っている
 - [ ] スマホ表示でエディタと実行が使える
