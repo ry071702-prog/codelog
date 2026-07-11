@@ -10,6 +10,7 @@
 - **ブラウザ内コード実行** — Web Worker による隔離実行。無限ループを書いても UI は固まらず、3秒でタイムアウト停止する
 - **クリア判定と進捗保存** — レッスンごとの check 関数で自動判定。進捗と書きかけコードは localStorage に保存され、リロードしても残る
 - **用語集** — 90語超の専門用語（JS文法 / Git・GitHub / 開発現場の言葉 / AI用語）を検索・カテゴリで絞り込み。レッスン本文中の用語はタップでポップアップ定義
+- **AIチューター (β)** — 各レッスンでその場で質問できる。書いているコードと実行結果は自動で添付されるので説明不要。修正コードは渡さず、見るべき行と考え方を導く設計。1日10回まで
 
 ## 技術構成
 
@@ -18,6 +19,7 @@
 - **実行エンジン**: `public/worker/runner.js` + `lib/runner.ts` — 実行のたびに Worker を使い捨てで生成し、`postMessage` でログを受け取る。ページの DOM・storage には一切触れない
 - **進捗**: `lib/progress.ts` + React Context (`components/ProgressProvider.tsx`) — Phase 0 は認証・DB なし
 - **用語集**: `lib/glossary.ts` + `app/glossary/page.tsx` + `components/TermText.tsx`（本文中の用語自動リンク）
+- **AIチューター**: `app/api/tutor/route.ts`（API Route + Anthropic API / claude-haiku-4-5）+ `components/TutorPanel.tsx`。API キーはサーバー側環境変数 `ANTHROPIC_API_KEY` のみで扱う
 
 ## 開発
 
@@ -26,6 +28,8 @@ npm install
 npm run dev    # http://localhost:3000
 npm run build  # 本番ビルド
 ```
+
+AIチューターを動かすには `.env.local` に `ANTHROPIC_API_KEY=sk-ant-...` を設定する（本番は Vercel の Environment Variables に登録）。未設定でもサイト本体は動作し、チューターだけ「準備中」表示になる。
 
 ## ロードマップ
 

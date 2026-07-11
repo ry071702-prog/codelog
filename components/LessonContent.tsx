@@ -9,6 +9,7 @@ import { useProgress } from "@/components/ProgressProvider";
 import { CodeEditor } from "@/components/CodeEditor";
 import { ConsoleOutput } from "@/components/ConsoleOutput";
 import { TermText } from "@/components/TermText";
+import { TutorPanel } from "@/components/TutorPanel";
 
 export function LessonContent({ lessonId }: { lessonId: string }) {
   const router = useRouter();
@@ -128,6 +129,8 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
       />
       <div className="h-5" />
       <ConsoleOutput logs={output} ran={ran} />
+
+      <TutorPanel lessonId={lessonId} code={code} logs={output} />
 
       {cleared && (
         <div className="mt-[22px] flex items-start gap-3 rounded-[14px] border border-ok/20 bg-ok-soft px-[18px] py-4">
