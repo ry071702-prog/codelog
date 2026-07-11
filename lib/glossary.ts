@@ -8,7 +8,8 @@ export type GlossaryCategory =
   | "データ構造"
   | "非同期"
   | "設計"
-  | "Web";
+  | "Web"
+  | "Git/GitHub";
 
 export const glossaryCategories: GlossaryCategory[] = [
   "基本",
@@ -18,6 +19,7 @@ export const glossaryCategories: GlossaryCategory[] = [
   "非同期",
   "設計",
   "Web",
+  "Git/GitHub",
 ];
 
 export interface GlossaryTerm {
@@ -731,6 +733,141 @@ worker.terminate();  // 強制停止`,
     example: `const el = document.querySelector("#title");
 el.textContent = "書き換えた";`,
     lessonIds: [],
+  },
+  // ---------- Git/GitHub ----------
+  {
+    slug: "git",
+    term: "Git",
+    category: "Git/GitHub",
+    oneLiner: "コードの変更履歴を記録・管理するバージョン管理システム。",
+    description:
+      "「いつ・誰が・何を変えたか」を全部記録してくれる道具。過去の状態にいつでも戻れるので、安心してコードを変更できる。ほぼすべての開発現場で使われている。コマンドは git ◯◯ の形で打つ。",
+    example: `git status   # いま何が変わっているか見る
+git log      # 変更履歴を見る`,
+  },
+  {
+    slug: "github",
+    term: "GitHub",
+    category: "Git/GitHub",
+    oneLiner: "Git のリポジトリをインターネット上に置ける共有サービス。",
+    description:
+      "自分のコードの置き場所（バックアップ）であり、公開ポートフォリオであり、複数人開発の共同作業場。codelog のコードも GitHub に置いてあり、push すると Vercel が自動で本番サイトを更新する。",
+  },
+  {
+    slug: "repository",
+    term: "リポジトリ",
+    category: "Git/GitHub",
+    oneLiner: "プロジェクト1つぶんのコードと変更履歴をまとめた入れ物。",
+    description:
+      "Git が管理する単位。プロジェクトのフォルダ+全変更履歴のセットで、「リポジトリを作る = このフォルダを Git で管理し始める」ということ。手元にあるものをローカルリポジトリ、GitHub 上のものをリモートリポジトリと呼ぶ。",
+    example: `git init    # このフォルダをリポジトリにする`,
+    aliases: ["repo", "リモートリポジトリ"],
+  },
+  {
+    slug: "commit",
+    term: "コミット",
+    category: "Git/GitHub",
+    oneLiner: "変更を「ここまでやった」として履歴に記録するセーブポイント。",
+    description:
+      "変更のスナップショットを1つの記録として残す操作。ゲームのセーブと同じで、こまめに刻むほど戻りやすい。git add で記録したい変更を選び（ステージング）、git commit -m \"メッセージ\" で記録する。メッセージには「何をしたか」を書く。",
+    example: `git add .                      # 変更を選ぶ
+git commit -m "配列レッスンを追加"  # 記録する`,
+    aliases: ["commit", "git commit"],
+  },
+  {
+    slug: "git-push",
+    term: "git push",
+    category: "Git/GitHub",
+    oneLiner: "手元のコミットを GitHub（リモート）へ送り上げる。",
+    description:
+      "ローカルリポジトリに積んだコミットを、GitHub 側へアップロードする操作。これで初めて他の人（や Vercel などのサービス）から見えるようになる。codelog では push すると本番サイトが自動で更新される。配列の push メソッドとは別物なので注意。",
+    example: `git push             # リモートへ送る
+# → Vercel が検知して自動デプロイ`,
+  },
+  {
+    slug: "git-pull",
+    term: "git pull",
+    category: "Git/GitHub",
+    oneLiner: "GitHub（リモート）の最新の変更を手元に取り込む。",
+    description:
+      "push の逆方向。リモートリポジトリに増えた新しいコミットをダウンロードして、手元のコードに反映する。複数人開発や、複数のPCで作業するときの「同期」の基本。",
+    example: `git pull   # リモートの最新を取り込む`,
+  },
+  {
+    slug: "branch",
+    term: "ブランチ",
+    category: "Git/GitHub",
+    oneLiner: "履歴の枝分かれ。本流を壊さずに変更を試せる作業ライン。",
+    description:
+      "履歴を枝分かれさせて、本流（main ブランチ）に影響を与えずに新機能や実験を進められる仕組み。できあがったらマージで本流に合流させる。「main は常に動く状態を保ち、作業はブランチで」が定石。",
+    example: `git switch -c feature/glossary  # ブランチを作って移動
+git switch main                 # main に戻る`,
+    aliases: ["branch", "main"],
+  },
+  {
+    slug: "merge",
+    term: "マージ",
+    category: "Git/GitHub",
+    oneLiner: "枝分かれしたブランチの変更を1つに合流させる。",
+    description:
+      "ブランチで進めた変更を別のブランチ（多くは main）に取り込む操作。同じ場所を別々に変更しているとコンフリクトが起きるので、その場合はどちらを採用するか人間が決めて解消する。",
+    example: `git switch main
+git merge feature/glossary  # 作業ブランチを main に合流`,
+    aliases: ["merge"],
+  },
+  {
+    slug: "pull-request",
+    term: "プルリクエスト",
+    category: "Git/GitHub",
+    oneLiner: "「この変更を取り込んで」という提案+レビューの場。PR と略す。",
+    description:
+      "GitHub 上で、ブランチの変更を main に取り込む前に「こういう変更をしました、確認してください」と提案する仕組み。差分を見ながらコメントし合い、OK ならマージする。チーム開発の中心的な作法で、git pull コマンドとは別物。",
+    example: `# GitHub 上の操作（コマンドではない）
+# ブランチを push → Compare & pull request → レビュー → Merge`,
+    aliases: ["Pull Request", "プルリク"],
+  },
+  {
+    slug: "clone",
+    term: "クローン",
+    category: "Git/GitHub",
+    oneLiner: "GitHub 上のリポジトリを丸ごと手元に複製する。",
+    description:
+      "リモートリポジトリを履歴ごとダウンロードして、手元で作業できるようにする操作。他の人の公開リポジトリを手元で動かしたいときや、新しい PC で自分のプロジェクトを再開するときの入口。",
+    example: `git clone https://github.com/ry071702-prog/codelog.git`,
+    aliases: ["clone", "git clone"],
+  },
+  {
+    slug: "fork",
+    term: "フォーク",
+    category: "Git/GitHub",
+    oneLiner: "他人のリポジトリを自分のアカウントに複製する（GitHub の機能）。",
+    description:
+      "他人のプロジェクトに直接 push はできないので、まず自分のアカウント側にコピー（フォーク）を作り、そこで変更してからプルリクエストで本家に提案する。オープンソースに貢献するときの標準の流れ。",
+    aliases: ["fork"],
+  },
+  {
+    slug: "conflict",
+    term: "コンフリクト",
+    category: "Git/GitHub",
+    oneLiner: "同じ場所への変更がぶつかって、自動で合流できない状態。",
+    description:
+      "マージや pull のとき、同じファイルの同じ行を別々に変更していると Git は「どちらが正しいか」を決められない。ファイルに <<<<<<< と >>>>>>> の印がつくので、残したい内容に手で直して、改めてコミットすれば解消する。慌てなくてよい。",
+    example: `<<<<<<< HEAD
+自分の変更
+=======
+相手の変更
+>>>>>>> feature/xxx`,
+    aliases: ["conflict", "競合"],
+  },
+  {
+    slug: "deploy",
+    term: "デプロイ",
+    category: "Git/GitHub",
+    oneLiner: "作ったものを本番環境に公開・反映すること。",
+    description:
+      "手元で動くコードを、インターネット上の誰でもアクセスできる場所に配置する作業。codelog では GitHub に push するだけで Vercel が自動でビルドしてデプロイする（CD = 継続的デプロイ）。",
+    example: `git push   # → Vercel が自動ビルド → 本番URLが更新される`,
+    aliases: ["deploy"],
   },
 ];
 
