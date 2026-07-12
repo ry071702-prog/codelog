@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Lightbulb, Sparkles } from "lucide-react";
 import { lessons, type Log } from "@/lib/lessons";
 import { runCode } from "@/lib/runner";
+import { runTsCode } from "@/lib/tsRunner";
 import { buildSrcDoc, guardCode } from "@/lib/domRunner";
 import { useProgress } from "@/components/ProgressProvider";
 import { CodeEditor } from "@/components/CodeEditor";
@@ -70,7 +71,9 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
     resetRun();
 
     if (!lesson.preview) {
-      const logs = await runCode(code);
+      // TS レッスンは、実行前にブラウザ内の tsc が型チェックする
+      const logs =
+        lesson.lang === "ts" ? await runTsCode(code) : await runCode(code);
       logsRef.current = logs;
       setOutput(logs);
       setRan(true);
@@ -195,6 +198,7 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
 
       <CodeEditor
         value={code}
+        fileName={lesson.lang === "ts" ? "script.ts" : "script.js"}
         onChange={(v) => setCodeFor(lessonId, v)}
         onRun={handleRun}
         onReset={handleReset}

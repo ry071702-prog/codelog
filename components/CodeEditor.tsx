@@ -4,6 +4,8 @@ import { Play, RotateCcw } from "lucide-react";
 
 interface CodeEditorProps {
   value: string;
+  /** タブに出すファイル名。TS レッスンでは script.ts になる */
+  fileName?: string;
   onChange: (value: string) => void;
   onRun: () => void;
   onReset: () => void;
@@ -12,6 +14,7 @@ interface CodeEditorProps {
 
 export function CodeEditor({
   value,
+  fileName = "script.js",
   onChange,
   onRun,
   onReset,
@@ -42,7 +45,7 @@ export function CodeEditor({
           <span className="h-[11px] w-[11px] rounded-full bg-[#febc2e]" />
           <span className="h-[11px] w-[11px] rounded-full bg-[#28c840]" />
           <span className="ml-2 font-mono text-xs text-[#6b7392]">
-            script.js
+            {fileName}
           </span>
         </div>
         <button
@@ -56,6 +59,7 @@ export function CodeEditor({
       </div>
       <textarea
         value={value}
+        aria-label="コードエディタ"
         spellCheck={false}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKey}
