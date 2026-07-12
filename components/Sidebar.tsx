@@ -6,6 +6,7 @@ import { BookA, Lock, Settings } from "lucide-react";
 import { lessons, roadmap } from "@/lib/lessons";
 import { useProgress } from "@/components/ProgressProvider";
 import { StepItem } from "@/components/StepItem";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface SidebarProps {
   currentId?: string;
@@ -20,12 +21,15 @@ export function Sidebar({ currentId, onNavigate }: SidebarProps) {
   return (
     <div className="flex h-full flex-col">
       <div className="px-5 pb-4 pt-[22px]">
-        <Link href="/" onClick={onNavigate} className="flex items-baseline gap-1.5">
-          <span className="font-mono text-[21px] font-extrabold tracking-tight text-ink">
-            codelog
-          </span>
-          <span className="font-mono text-[11px] text-faint">()</span>
-        </Link>
+        <div className="flex items-start justify-between">
+          <Link href="/" onClick={onNavigate} className="flex items-baseline gap-1.5">
+            <span className="font-mono text-[21px] font-extrabold tracking-tight text-ink">
+              codelog
+            </span>
+            <span className="font-mono text-[11px] text-faint">()</span>
+          </Link>
+          <ThemeToggle />
+        </div>
         <div className="mt-1 text-[12.5px] leading-normal text-sub">
           JavaScript を、基礎から本格的に
         </div>
@@ -50,6 +54,12 @@ export function Sidebar({ currentId, onNavigate }: SidebarProps) {
         >
           <BookA size={15} /> 用語集 — 専門用語を調べる
         </Link>
+        <div className="mt-2 flex items-center justify-between px-3 text-[11.5px] text-faint">
+          <span>レッスン・用語を検索</span>
+          <kbd className="rounded border border-line bg-card px-1.5 py-0.5 font-mono text-[10px]">
+            ⌘K
+          </kbd>
+        </div>
         <Link
           href="/settings"
           onClick={onNavigate}

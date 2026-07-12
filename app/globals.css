@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
-@theme inline {
+/* inline を付けないこと。inline だと色がユーティリティに直値で焼き込まれ、
+   下のダークモードで変数を差し替えても効かなくなる。 */
+@theme {
   /* プロトタイプの色定数 C をそのまま theme に登録 */
   --color-canvas: #f4f5f8;
   --color-card: #ffffff;
@@ -22,6 +24,40 @@
   --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 }
 
+/* ダークモード。
+   Tailwind の色は CSS 変数（@theme）を見ているので、
+   変数を差し替えるだけでサイト全体が切り替わる。
+   既定は OS の設定に従い、ヘッダーのトグルで上書きできる（data-theme）。 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-canvas: #0f1117;
+    --color-card: #171a23;
+    --color-ink: #e8eaf2;
+    --color-sub: #9aa2b8;
+    --color-faint: #6b7288;
+    --color-line: #262a36;
+    --color-accent: #8b92ff;
+    --color-accent-soft: #1e2140;
+    --color-ok: #2ecfae;
+    --color-ok-soft: #102b26;
+    --color-err: #ff6b6f;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-canvas: #0f1117;
+  --color-card: #171a23;
+  --color-ink: #e8eaf2;
+  --color-sub: #9aa2b8;
+  --color-faint: #6b7288;
+  --color-line: #262a36;
+  --color-accent: #8b92ff;
+  --color-accent-soft: #1e2140;
+  --color-ok: #2ecfae;
+  --color-ok-soft: #102b26;
+  --color-err: #ff6b6f;
+}
+
 body {
   background: var(--color-canvas);
   color: var(--color-ink);
@@ -41,7 +77,7 @@ textarea {
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d7dae4;
+  background: color-mix(in srgb, var(--color-faint) 45%, transparent);
   border-radius: 999px;
   border: 2px solid var(--color-canvas);
 }
