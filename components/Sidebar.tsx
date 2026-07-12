@@ -2,7 +2,7 @@
 
 import { Fragment } from "react";
 import Link from "next/link";
-import { BookA, Lock } from "lucide-react";
+import { BookA, Lock, Settings } from "lucide-react";
 import { lessons, roadmap } from "@/lib/lessons";
 import { useProgress } from "@/components/ProgressProvider";
 import { StepItem } from "@/components/StepItem";
@@ -50,6 +50,13 @@ export function Sidebar({ currentId, onNavigate }: SidebarProps) {
         >
           <BookA size={15} /> 用語集 — 専門用語を調べる
         </Link>
+        <Link
+          href="/settings"
+          onClick={onNavigate}
+          className="mt-2 flex items-center gap-2 rounded-lg px-3 py-1.5 text-[12.5px] text-faint transition-colors hover:text-accent"
+        >
+          <Settings size={14} /> 進捗のバックアップ
+        </Link>
       </div>
       <div className="flex-1 overflow-y-auto px-3 pb-2">
         {lessons.map((l, i) => {
@@ -75,9 +82,11 @@ export function Sidebar({ currentId, onNavigate }: SidebarProps) {
             </Fragment>
           );
         })}
-        <div className="px-2 pb-2 pt-5 text-[11px] font-bold tracking-wider text-faint">
-          これから
-        </div>
+        {roadmap.length > 0 && (
+          <div className="px-2 pb-2 pt-5 text-[11px] font-bold tracking-wider text-faint">
+            これから
+          </div>
+        )}
         {roadmap.map((r) => (
           <div
             key={r}

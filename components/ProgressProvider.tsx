@@ -11,10 +11,14 @@ import {
   useState,
 } from "react";
 import {
+  loadChecks,
   loadCode,
   loadCompleted,
+  loadPreviewStore,
+  saveChecks,
   saveCode,
   saveCompleted,
+  savePreviewStore,
 } from "@/lib/progress";
 
 interface ProgressContextValue {
@@ -23,6 +27,12 @@ interface ProgressContextValue {
   markCompleted: (lessonId: string) => void;
   codeByLesson: Record<string, string>;
   setCodeFor: (lessonId: string, code: string) => void;
+  /** MODULE 08 のチェックリスト（レッスンID → チェック済みの行番号） */
+  checksByLesson: Record<string, number[]>;
+  toggleCheck: (lessonId: string, index: number) => void;
+  /** プレビュー iframe に渡す localStorage の中身（レッスンごと） */
+  previewStore: Record<string, Record<string, string>>;
+  setPreviewStoreFor: (lessonId: string, store: Record<string, string>) => void;
 }
 
 const ProgressContext = createContext<ProgressContextValue | null>(null);
@@ -31,6 +41,10 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
   const [loaded, setLoaded] = useState(false);
   const [completed, setCompleted] = useState<string[]>([]);
   const [codeByLesson, setCodeByLesson] = useState<Record<string, string>>({});
+  const [checksByLesson, setChecksByLesson] = useState<Record<string, number[]>>({});
+  const [previewStore, setPreviewStore] = useState<
+    Record<string, Record<string, string>>
+  >({});
 
   useEffect(() => {
     // localStorage は SSR に存在しないため、hydration 後に読む必要がある
@@ -38,6 +52,8 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCompleted(loadCompleted());
     setCodeByLesson(loadCode());
+    setChecksByLesson(loadChecks());
+    setPreviewStore(loadPreviewStore());
     setLoaded(true);
   }, []);
 
@@ -52,6 +68,16 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(t);
   }, [codeByLesson, loaded]);
 
+  useEffect(() => {
+    if (!loaded) return;
+    saveChecks(checksByLesson);
+  }, [checksByLesson, loaded]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    savePreviewStore(previewStore);
+  }, [previewStore, loaded]);
+
   const markCompleted = useCallback((lessonId: string) => {
     setCompleted((prev) => (prev.includes(lessonId) ? prev : [...prev, lessonId]));
   }, []);
@@ -60,9 +86,36 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     setCodeByLesson((prev) => ({ ...prev, [lessonId]: code }));
   }, []);
 
+  const toggleCheck = useCallback((lessonId: string, index: number) => {
+    setChecksByLesson((prev) => {
+      const current = prev[lessonId] ?? [];
+      const next = current.includes(index)
+        ? current.filter((i) => i !== index)
+        : [...current, index];
+      return { ...prev, [lessonId]: next };
+    });
+  }, []);
+
+  const setPreviewStoreFor = useCallback(
+    (lessonId: string, store: Record<string, string>) => {
+      setPreviewStore((prev) => ({ ...prev, [lessonId]: store }));
+    },
+    []
+  );
+
   return (
     <ProgressContext.Provider
-      value={{ loaded, completed, markCompleted, codeByLesson, setCodeFor }}
+      value={{
+        loaded,
+        completed,
+        markCompleted,
+        codeByLesson,
+        setCodeFor,
+        checksByLesson,
+        toggleCheck,
+        previewStore,
+        setPreviewStoreFor,
+      }}
     >
       {children}
     </ProgressContext.Provider>

@@ -27,7 +27,13 @@ export interface Lesson {
   paras: string[];
   points?: string[];
   example: string;
-  task: Task;
+  /** コードを書くレッスンの課題。チェックリスト型のレッスンには無い */
+  task?: Task;
+  /**
+   * 自分のパソコンで手を動かすレッスン（MODULE 08）。
+   * エディタの代わりに手順のチェックリストを出し、全部チェックでクリアになる。
+   */
+  checklist?: string[];
   /** これがあるレッスンは、Worker ではなく sandbox iframe のプレビューで実行する */
   preview?: Preview;
   /**
@@ -45,6 +51,7 @@ const M4 = "MODULE 04 — 設計とモダンJS";
 const M5 = "MODULE 05 — ブラウザとDOM";
 const M6 = "MODULE 06 — TypeScript";
 const M7 = "MODULE 07 — React / Next.js";
+const M8 = "MODULE 08 — 個人開発の実践";
 
 export const lessons: Lesson[] = [
   {
@@ -2199,9 +2206,385 @@ ReactDOM.createRoot(document.getElementById("root")).render(<Page />);`,
         !!dom && /<button/.test(dom) && !/ようこそ/.test(dom),
     },
   },
+
+  // ── MODULE 08 — 個人開発の実践 ─────────────────────────────
+  // ここからは「自分のパソコンで、自分のアプリを作って公開する」章。
+  // 手を動かす回はチェックリスト（checklist）で進める。
+  {
+    id: "dev-scope", module: M8, title: "何を作るか決める — 削る技術",
+    paras: [
+      "ここからは卒業制作。誰かに見せられる、自分のアプリを1つ作って公開する。書き方はもう知っているので、必要なのは「作りきる」ための考え方。",
+      "初めての個人開発が完成しない理由は、たいてい実力ではなく企画の大きさにある。思いついた機能を全部入れようとすると、永遠に終わらない。だから最初にやるのは、削ること。",
+      "決めるのは3つだけ。誰の・どんな困りごとを・どうやって解決するか。そして「これが無いと成立しない機能」を3つに絞る（MVP＝最小限で価値が出る形）。残りは全部あとで足せる。",
+    ],
+    points: [
+      "自分が実際に困っていることを選ぶ（使い続けられる）",
+      "MVP は3機能まで。迷ったら削る",
+      "「あったらいいな」は次のバージョンへ",
+    ],
+    example: `// 例: 読んだ本を記録するアプリ
+const plan = {
+  name: "booklog",
+  who: "本を読むけど、読んだ内容を忘れてしまう自分",
+  problem: "読んだ本と、そこから学んだ一言が残らない",
+  mvp: ["本を追加する", "一言メモを書く", "一覧で読み返す"],
+};
+
+console.log(\`\${plan.name}: \${plan.problem}\`);
+plan.mvp.forEach((f, i) => console.log(\`機能\${i + 1}: \${f}\`));`,
+    task: {
+      prompt: "自分が作るアプリの企画を plan オブジェクトに書いて出力しよう（mvp はちょうど3つに絞る）。",
+      starter: `const plan = {
+  name: "",
+  who: "",
+  problem: "",
+  mvp: [],
+};
+
+console.log(\`\${plan.name}: \${plan.problem}\`);
+plan.mvp.forEach((f, i) => console.log(\`機能\${i + 1}: \${f}\`));`,
+      hint: "自分が毎週やっている面倒なこと・忘れて困っていることを1つ思い出すと、題材が見つかる。",
+      check: (logs, code) =>
+        /mvp\s*:\s*\[[^\]]+\]/.test(code) &&
+        logs.filter((l) => l.type === "log").length >= 4 &&
+        !logs.some((l) => /^機能\d+: $/.test(l.text)),
+    },
+  },
+  {
+    id: "dev-data", module: M8, title: "データから設計する",
+    paras: [
+      "画面から作り始めると、たいてい途中で行き詰まる。先に決めるべきはデータ——アプリが何を持っていて、それがどんな形をしているか。",
+      "MODULE 06 でやったように、型を書いてみるのが一番はやい。この形さえ決まれば、画面は「そのデータをどう見せるか」に過ぎなくなり、React でも DOM でも同じように書ける。",
+      "決めるのは3つ。1件のデータの形（プロパティ）、一意に見分ける id、そして「どう並べる・絞る・数える」か。ここまで決まれば、実装は作業になる。",
+    ],
+    points: [
+      "1件の形 → 配列 → 集計、の順に考える",
+      "id は必ず持たせる（削除・更新・key に効く）",
+      "作りながら形が変わるのは普通。恐れず直す",
+    ],
+    example: `// 1件の形
+const book = { id: 1, title: "リーダブルコード", note: "命名が9割", done: true };
+
+// 集まり
+const books = [book, { id: 2, title: "達人", note: "", done: false }];
+
+// 使い方（読み終わった数）
+const doneCount = books.filter((b) => b.done).length;
+console.log(\`\${books.length}冊中 \${doneCount}冊 読了\`);`,
+    task: {
+      prompt: "自分のアプリのデータを設計しよう。1件の形を決め、サンプルを3件並べ、そこから何か1つ集計して出力する。",
+      starter: `// TODO: 自分のアプリのデータ（1件の形を決めて、3件つくる）
+const items = [];
+
+// TODO: 何か1つ集計して出力する（件数・合計・絞り込みなど）
+`,
+      hint: "id を必ず入れること。集計は items.filter(...).length や reduce で。",
+      check: (logs, code) =>
+        /id\s*:/.test(code) &&
+        (code.match(/\{[^{}]*id\s*:/g) ?? []).length >= 3 &&
+        logs.some((l) => l.type === "log"),
+    },
+  },
+  {
+    id: "dev-setup", module: M8, title: "自分のパソコンに開発環境を作る",
+    paras: [
+      "ここからは codelog の外——自分のパソコンで手を動かす。ブラウザの中では体験できない、本物の開発環境を用意する。",
+      "必要なものは3つだけ。Node.js（JavaScript をパソコン上で動かす土台）、エディタ（VS Code）、そしてターミナル。Next.js のプロジェクトは create-next-app が一発で作ってくれる。",
+      "npm run dev を実行して、ブラウザで http://localhost:3000 が開けば勝ち。この瞬間から、あなたのパソコンは開発環境になる。",
+    ],
+    points: [
+      "Node.js は nodejs.org から LTS 版を入れる",
+      "npx create-next-app@latest booklog（名前は自分のアプリ名で）",
+      "設定を聞かれたら、TypeScript / Tailwind は Yes、あとは既定でよい",
+    ],
+    example: `# ターミナルで実行する
+node -v                            # v20 以上ならOK
+npx create-next-app@latest booklog # プロジェクトを作る
+cd booklog
+npm run dev                        # http://localhost:3000 が開く`,
+    checklist: [
+      "Node.js をインストールした（ターミナルで node -v が表示される）",
+      "VS Code（エディタ）をインストールした",
+      "npx create-next-app@latest でプロジェクトを作った",
+      "npm run dev を実行して、localhost:3000 が開いた",
+      "app/page.tsx の文字を書き換えて、保存したら画面が変わることを確認した",
+    ],
+  },
+  {
+    id: "dev-git", module: M8, title: "Git で作業を保存する",
+    paras: [
+      "コードは書いた瞬間から壊れうる。壊してもいつでも戻れる状態を作るのが Git で、その置き場が GitHub。個人開発でも最初に入れておくべき装備。",
+      "流れは単純。git add で今回の変更を選び、git commit で「ここまで」の印をつけ、git push で GitHub に送る。commit のメッセージは、未来の自分への手紙だと思って書く。",
+      "GitHub にコードが載っていれば、これがそのままポートフォリオになる。次のレッスンのデプロイも、GitHub にあることが前提になる。",
+    ],
+    points: [
+      "create-next-app は git init まで済ませてくれている",
+      "commit は小さく、こまめに（機能1つ＝1コミット）",
+      "GitHub のリポジトリは public でよい（見せられる資産になる）",
+    ],
+    example: `git status                        # 今の状態を見る
+git add .                         # 変更を全部選ぶ
+git commit -m "本の一覧を表示する"  # 印をつける
+
+# GitHub で空のリポジトリを作ってから
+git remote add origin https://github.com/ユーザー名/booklog.git
+git push -u origin main           # 送る`,
+    checklist: [
+      "GitHub にリポジトリを作った",
+      "git add . と git commit -m \"...\" でコミットした",
+      "git push で GitHub にコードが上がっていることを確認した",
+      "何か1行変えて、もう一度 commit → push してみた",
+    ],
+  },
+  {
+    id: "dev-ui", module: M8, title: "MVP を作る — データを画面に出す",
+    lang: "jsx",
+    preview: { html: `<div id="root"></div>` },
+    paras: [
+      "設計したデータを、React で画面に出す。ここが MVP の中心で、動くものが初めて手に入る瞬間。",
+      "作り方は MODULE 07 と同じ。データを useState に持ち、map で並べ、フォームから追加する。ここでは codelog の中で「あなたのアプリの原型」を組み立てておこう——このまま自分のプロジェクトの app/page.tsx に持っていける。",
+      "コツは、完成させようとしないこと。まず一覧が出る。次に追加できる。それだけで十分にアプリだ。",
+    ],
+    points: [
+      "\"use client\" を書けば、Next.js のページでもそのまま動く",
+      "見た目は後回し。まず動かす",
+      "できたら自分のプロジェクトに貼って、npm run dev で確認",
+    ],
+    example: `function App() {
+  const [items, setItems] = useState([
+    { id: 1, title: "リーダブルコード", note: "命名が9割" },
+  ]);
+
+  return (
+    <ul>
+      {items.map((item) => (
+        <li key={item.id}>
+          <strong>{item.title}</strong> — {item.note}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);`,
+    task: {
+      prompt: "自分のアプリの MVP を作ろう。データを一覧表示し、フォームから追加できるところまで（実行したら実際に追加してみて）。",
+      starter: `function App() {
+  const [items, setItems] = useState([]);
+  const [text, setText] = useState("");
+
+  const add = () => {
+    if (text === "") return;
+    // TODO: items に1件足して、入力欄を空にする
+  };
+
+  return (
+    <div>
+      <h2>マイアプリ</h2>
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="追加するもの"
+      />
+      <button onClick={add}>追加</button>
+      <ul>
+        {/* TODO: items を map で並べる（key を忘れずに） */}
+      </ul>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);`,
+      hint: "setItems([...items, { id: Date.now(), title: text }]); と、{items.map((item) => <li key={item.id}>{item.title}</li>)}。",
+      check: (logs, code, dom) =>
+        /setItems/.test(code) && /map/.test(code) &&
+        !!dom && (dom.match(/<li/g) ?? []).length >= 1,
+    },
+  },
+  {
+    id: "dev-persist", module: M8, title: "データを保存する — localStorage",
+    lang: "jsx",
+    preview: { html: `<div id="root"></div>` },
+    paras: [
+      "リロードすると消えるアプリは、まだ道具にならない。最小の解決策が localStorage——ブラウザにデータを残す仕組みで、codelog の進捗もこれで保存している。",
+      "書くのは JSON.stringify で文字列にしてから、読むのは JSON.parse で戻してから。保存は「変わったタイミング」で、読み込みは「最初の1回」（useEffect の出番）。",
+      "本格的にやるならデータベース（Supabase など）が要るが、まずはこれで十分。個人開発は、動くものを出してから育てる。",
+    ],
+    points: [
+      "localStorage.setItem(キー, JSON.stringify(値))",
+      "JSON.parse(localStorage.getItem(キー) ?? \"[]\")",
+      "読み込みは useEffect(..., []) で最初の1回だけ",
+    ],
+    example: `function App() {
+  const [items, setItems] = useState([]);
+
+  useEffect(() => {                                  // 最初に読み込む
+    const saved = localStorage.getItem("myapp:items");
+    if (saved) setItems(JSON.parse(saved));
+  }, []);
+
+  const add = (title) => {
+    const next = [...items, { id: Date.now(), title }];
+    setItems(next);
+    localStorage.setItem("myapp:items", JSON.stringify(next));   // 保存する
+  };
+
+  return <p>{items.length}件</p>;
+}`,
+    task: {
+      prompt: "追加したデータを localStorage に保存し、読み込み時に復元しよう（プレビューを実行し直しても残れば成功）。",
+      starter: `const KEY = "myapp:items";
+
+function App() {
+  const [items, setItems] = useState([]);
+  const [text, setText] = useState("");
+
+  useEffect(() => {
+    // TODO: 保存されたデータがあれば読み込む
+  }, []);
+
+  const add = () => {
+    if (text === "") return;
+    const next = [...items, { id: Date.now(), title: text }];
+    setItems(next);
+    setText("");
+    // TODO: next を localStorage に保存する
+  };
+
+  return (
+    <div>
+      <input value={text} onChange={(e) => setText(e.target.value)} placeholder="追加するもの" />
+      <button onClick={add}>追加</button>
+      <ul>
+        {items.map((item) => (
+          <li key={item.id}>{item.title}</li>
+        ))}
+      </ul>
+      <p>{items.length}件（リロードしても残る）</p>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);`,
+      hint: "保存: localStorage.setItem(KEY, JSON.stringify(next)); / 読み込み: const saved = localStorage.getItem(KEY); if (saved) setItems(JSON.parse(saved));",
+      check: (logs, code, dom) =>
+        /localStorage\.setItem/.test(code) && /JSON\.parse/.test(code) &&
+        !!dom && (dom.match(/<li/g) ?? []).length >= 1,
+    },
+  },
+  {
+    id: "dev-env", module: M8, title: "秘密の情報を守る — 環境変数",
+    paras: [
+      "外部サービス（AI の API など）を使うと、必ず API キーを扱うことになる。これをコードに直接書いて GitHub に push すると、世界中に公開される——実際に多発している事故で、不正利用の請求が来ることもある。",
+      "だからキーは .env.local に書き、.gitignore に .env* を入れて Git に上げない。本番（Vercel）では Environment Variables に登録する。コードからは process.env.KEY_NAME で読む。",
+      "もうひとつ大事な原則。キーはサーバー側でしか使わない。ブラウザに渡したコードは全部見えるので、クライアントで API キーを使えば、その時点で漏れている（codelog の AIチューターがサーバー側の API Route を経由しているのは、このため）。",
+    ],
+    points: [
+      ".env.local に書く／.gitignore で除外する（既定で入っている）",
+      "本番は Vercel の Environment Variables に登録 → 再デプロイで反映",
+      "NEXT_PUBLIC_ を付けた変数はブラウザに露出する。キーには絶対付けない",
+    ],
+    example: `# .env.local（Git には上げない）
+ANTHROPIC_API_KEY=sk-ant-...
+
+// app/api/something/route.ts（サーバー側だけで読む）
+const key = process.env.ANTHROPIC_API_KEY;`,
+    checklist: [
+      "キーを使うなら .env.local に書いた（コードに直書きしていない）",
+      ".gitignore に .env* が入っていることを確認した",
+      "git push したあと、GitHub 上にキーが載っていないことを目で確認した",
+      "本番で使うなら、Vercel の Environment Variables に登録した",
+    ],
+  },
+  {
+    id: "dev-deploy", module: M8, title: "世界に出す — Vercel にデプロイ",
+    paras: [
+      "手元で動くだけのアプリは、まだ誰のものでもない。URL を持って初めて、人に見せられる作品になる。",
+      "Next.js なら Vercel が最短。GitHub アカウントでログインし、リポジトリを選ぶだけで、ビルドから公開まで自動でやってくれる。以降は git push するたびに自動でデプロイされる。",
+      "公開できたら、その URL を誰かに送ってみる。ここまで来たら、あなたはもう「作る人」だ。",
+    ],
+    points: [
+      "vercel.com → GitHub でログイン → リポジトリを Import → Deploy",
+      "以降は push するだけで自動デプロイ",
+      "環境変数を追加したら、再デプロイしないと反映されない",
+    ],
+    example: `# 手元での確認（本番と同じビルドを試す）
+npm run build
+npm start
+
+# あとは push するだけ
+git push`,
+    checklist: [
+      "Vercel に GitHub でログインした",
+      "リポジトリを Import して Deploy した",
+      "公開された URL をブラウザで開いて、動くことを確認した",
+      "何か1行直して push し、自動でデプロイされることを確認した",
+      "その URL を誰か1人に送った",
+    ],
+  },
+  {
+    id: "dev-improve", module: M8, title: "使ってもらって、直す",
+    paras: [
+      "作って終わりにしない。ここからが、経験値の伸びる場所。",
+      "自分で1週間使ってみると、必ず「ここが面倒」が出てくる。友達に触ってもらうと、自分では気づかない詰まりが見つかる。その1つを直して、また push する——このサイクルこそが開発。",
+      "そして README を書く。何のアプリで、何ができて、どう動かすのか。これが無いと、あなたのリポジトリは他人にとって存在しないのと同じ。",
+    ],
+    points: [
+      "フィードバックは「直すもの1つ」に絞る（全部やろうとしない）",
+      "README には スクリーンショット・機能・起動方法 を書く",
+      "小さく直して、こまめに push",
+    ],
+    example: `# booklog
+
+読んだ本と、そこから学んだ一言を記録するアプリ。
+
+## 機能
+- 本の追加 / 一言メモ / 一覧で読み返す
+
+## 開発
+\`\`\`bash
+npm install
+npm run dev
+\`\`\`
+
+## 技術
+Next.js / React / TypeScript / Vercel`,
+    checklist: [
+      "自分で数日使ってみた",
+      "誰か1人に触ってもらって、感想をもらった",
+      "もらった意見の中から1つ選んで、直して push した",
+      "README を書いた（何のアプリ・機能・起動方法）",
+    ],
+  },
+  {
+    id: "dev-graduation", module: M8, title: "卒業 — ここから先は自由",
+    paras: [
+      "おつかれさま。ここまでで、変数の宣言から、非同期処理、画面の操作、型、React、そして公開まで——ひとつながりに走り抜けた。あなたはもう、作りたいものを自分で形にできる。",
+      "次の一歩は、あなたが決めていい。作ったアプリを育てるのもいい。データベース（Supabase）を足してアカウント機能を付けるのも、AI の API を組み込むのも、今のあなたなら手が届く。",
+      "ひとつだけ、続けるコツを。「作りたい」より「作り続けられる」が強い。小さく作って、公開して、直す。これを繰り返している人が、いちばん遠くまで行く。codelog はいつでもここにある。詰まったら、いつでも戻ってきて。",
+    ],
+    points: [
+      "作ったものを人に見せる（それが次の機会を連れてくる）",
+      "次にやることを1つだけ決めて、今日それを始める",
+      "困ったらレッスンに戻る。戻るのは後退じゃなく設計通り",
+    ],
+    example: `// ここから先の選択肢（好きなものを選んでいい）
+const next = [
+  "作ったアプリにデータベース（Supabase）を足す",
+  "AI の API を組み込んで、賢い機能を作る",
+  "デザインを詰めて、ポートフォリオとして仕上げる",
+  "まったく別のアプリを、もう1本作る",
+];`,
+    checklist: [
+      "アプリを公開して、URL を持っている",
+      "GitHub にコードと README がある",
+      "次にやることを1つ決めた",
+      "自分が「作れる人」になったことを、ちゃんと認めた",
+    ],
+  },
 ];
 
-export const roadmap = ["Module 08 — 個人開発の実践"];
+export const roadmap: string[] = [];
 
 export function getLesson(id: string): Lesson | undefined {
   return lessons.find((l) => l.id === id);

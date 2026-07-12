@@ -17,9 +17,10 @@ const COMPILE_TIMEOUT_MS = 30000;
 export interface PreviewMessage {
   source: "codelog-preview";
   runId: number;
-  type: "log" | "warn" | "error" | "dom" | "done";
+  type: "log" | "warn" | "error" | "dom" | "done" | "storage";
   text?: string;
   html?: string;
+  store?: Record<string, string>;
 }
 
 /**
@@ -134,7 +135,7 @@ export function buildSrcDoc(
   preview: Preview,
   code: string,
   runId: number,
-  options: { react?: boolean } = {}
+  options: { react?: boolean; storage?: Record<string, string> } = {}
 ): string {
   const reactTag = options.react
     ? '<script src="/vendor/react/react.js"></script>'
@@ -217,11 +218,22 @@ ${reactTag}
     });
   };
 
+  // sandbox iframe には本物の localStorage が無い（隔離されているため）。
+  // レッスンで学べるように、同じ使い方ができる代わりの localStorage を渡す。
+  // 中身は親（codelog 本体）が預かるので、実行し直しても残る。
+  var store = ${JSON.stringify(options.storage ?? {}).replace(/</g, "\\u003c")};
+  var localStorageShim = {
+    getItem: function (k) { return Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null; },
+    setItem: function (k, v) { store[String(k)] = String(v); send("storage", { store: store }); },
+    removeItem: function (k) { delete store[String(k)]; send("storage", { store: store }); },
+    clear: function () { store = {}; send("storage", { store: store }); }
+  };
+
   var code = ${embed(code)};
   (async function () {
     try {
-      var fn = new Function("console", "fetchUsers", "fetchPosts", ${reactArgs}"return (async () => {\\n" + code + "\\n})();");
-      await fn(sandboxConsole, fetchUsers, fetchPosts, ${reactValues}undefined);
+      var fn = new Function("console", "fetchUsers", "fetchPosts", "localStorage", ${reactArgs}"return (async () => {\\n" + code + "\\n})();");
+      await fn(sandboxConsole, fetchUsers, fetchPosts, localStorageShim, ${reactValues}undefined);
     } catch (err) {
       send("error", { text: String(err && err.message ? err.message : err) });
     }
