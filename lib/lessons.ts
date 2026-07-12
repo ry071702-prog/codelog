@@ -52,6 +52,7 @@ const M5 = "MODULE 05 — ブラウザとDOM";
 const M6 = "MODULE 06 — TypeScript";
 const M7 = "MODULE 07 — React / Next.js";
 const M8 = "MODULE 08 — 個人開発の実践";
+const M9 = "MODULE 09 — テストを書く";
 
 export const lessons: Lesson[] = [
   {
@@ -2088,9 +2089,10 @@ function App() {
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);`,
       hint: "Controls を ({ onAdd, onSub }) にして、App から onSub={() => setCount((prev) => prev - 1)} を渡す。",
+      // 数字が 0 から動いていればよい（+1 を先に押した人が詰まないよう、マイナスは要求しない）
       check: (logs, code, dom) =>
         /onSub|onMinus|onDown|onDecrement/.test(code) &&
-        !!dom && /いまのカウント: -[1-9]/.test(dom),
+        !!dom && /いまのカウント: -?[1-9]/.test(dom),
     },
   },
   {
@@ -2580,6 +2582,300 @@ const next = [
       "GitHub にコードと README がある",
       "次にやることを1つ決めた",
       "自分が「作れる人」になったことを、ちゃんと認めた",
+    ],
+  },
+
+  // ── MODULE 09 — テストを書く ─────────────────────────────
+  // Worker に test / expect を用意してあるので、Vitest / Jest と同じ書き味で
+  // ブラウザ内で本当にテストが走る（結果は ✓ / ✗ で出る）。
+  {
+    id: "test-why", module: M9, title: "テスト — コードに見張りを付ける",
+    paras: [
+      "個人開発を続けると、必ずこうなる。「直したつもりが別の場所を壊した」。手で全部確かめ直すのは、機能が増えるほど無理になる。",
+      "テストは「この関数はこう動くはず」をコードで書いておく仕組み。書いておけば、何度でも一瞬で確かめ直せる。壊れた瞬間に、壊れた場所を教えてくれる。",
+      "書き方はどれも同じ形だ。test(\"説明\", () => { expect(実際の値).toBe(期待する値); })。codelog では実務で使う Vitest とほぼ同じ書き味で、そのまま実行できる。",
+    ],
+    points: [
+      "expect(実際).toBe(期待) — これが1つの検証",
+      "通れば ✓、落ちれば ✗ と理由が出る",
+      "テストは「動くことの証明」であり「仕様の説明書」でもある",
+    ],
+    example: `const add = (a, b) => a + b;
+
+test("2 + 3 は 5", () => {
+  expect(add(2, 3)).toBe(5);
+});
+
+test("マイナスも足せる", () => {
+  expect(add(-1, 1)).toBe(0);
+});`,
+    task: {
+      prompt: "掛け算の関数 multiply を作り、テストを2つ書いて両方 ✓ にしよう。",
+      starter: `const multiply = (a, b) => a * b;
+
+test("4 × 5 は 20", () => {
+  expect(multiply(4, 5)).toBe(20);
+});
+
+// TODO: 0 を掛けたら 0 になる、というテストをもう1つ書く
+`,
+      hint: "test(\"0 を掛けると 0\", () => { expect(multiply(7, 0)).toBe(0); });",
+      check: (logs) =>
+        logs.filter((l) => l.text.startsWith("✓")).length >= 2 &&
+        !logs.some((l) => l.text.startsWith("✗")),
+    },
+  },
+  {
+    id: "test-fail", module: M9, title: "落ちるテストを読む",
+    paras: [
+      "テストの価値は、通ったときより落ちたときに出る。落ちたテストは「どこが」「何を期待して」「実際どうだったか」を教えてくれる。",
+      "だから、わざと落としてみるのが一番はやい理解の道。下のコードには意図的なバグが1つ入っている。テストは正しく、実装が間違っている。",
+      "落ちたメッセージを読んで、実装のほうを直そう。これが実務のデバッグそのもの——テストが指した場所を見に行く、という作業になる。",
+    ],
+    points: [
+      "テストが落ちたら、まず「期待」と「実際」を見比べる",
+      "テストを直したくなったら要注意。多くの場合、悪いのは実装",
+    ],
+    example: `// 落ちるテストの例
+const half = (n) => n / 3;      // ← バグ（3で割っている）
+
+test("10 の半分は 5", () => {
+  expect(half(10)).toBe(5);     // ✗ 5 を期待したが 3.33... だった
+});`,
+    task: {
+      prompt: "テストは正しい。実装 toCelsius のバグを直して、テストを ✓ にしよう（華氏→摂氏は (F - 32) / 1.8）。",
+      starter: `const toCelsius = (f) => (f - 32) / 2;   // ← どこかが違う
+
+test("212°F は 100°C", () => {
+  expect(toCelsius(212)).toBe(100);
+});
+
+test("32°F は 0°C", () => {
+  expect(toCelsius(32)).toBe(0);
+});
+`,
+      hint: "1.8 で割るのが正しい。テストのほうは触らないこと。",
+      check: (logs, code) =>
+        /1\.8|9\s*\*|\* *5 *\/ *9/.test(code) &&
+        logs.filter((l) => l.text.startsWith("✓")).length >= 2 &&
+        !logs.some((l) => l.text.startsWith("✗")),
+    },
+  },
+  {
+    id: "test-edge", module: M9, title: "境界を疑う — エッジケース",
+    paras: [
+      "「ふつうの入力」で動くのは当たり前。バグが棲むのは端っこ——空っぽ、0、マイナス、想定外の型。ここを試すのがエッジケースのテスト。",
+      "空の配列を渡したら? 0 で割ったら? 何も入力されなかったら? こう問いかける癖がつくと、バグの数が目に見えて減る。",
+      "テストを書く前に「壊れるとしたらどこか」を先に考える。これはコードを書く前の設計そのものでもある。",
+    ],
+    points: [
+      "空・0・マイナス・巨大な値・想定外の型",
+      "toEqual は配列やオブジェクトの中身を比べる（toBe は同一のものかを見る）",
+      "エラーになるべき場面は expect(() => f()).toThrow()",
+    ],
+    example: `const average = (nums) => {
+  if (nums.length === 0) return 0;      // 端っこを守る
+  return nums.reduce((s, n) => s + n, 0) / nums.length;
+};
+
+test("ふつうの入力", () => {
+  expect(average([2, 4, 6])).toBe(4);
+});
+
+test("空の配列でも落ちない", () => {
+  expect(average([])).toBe(0);
+});
+
+test("中身の比較は toEqual", () => {
+  expect([1, 2].map((n) => n * 2)).toEqual([2, 4]);
+});`,
+    task: {
+      prompt: "配列の最大値を返す maxOf を、空配列でも落ちないように仕上げ、エッジケースのテストを通そう。",
+      starter: `const maxOf = (nums) => {
+  // TODO: 空配列なら null を返す
+  return Math.max(...nums);
+};
+
+test("最大値を返す", () => {
+  expect(maxOf([3, 9, 4])).toBe(9);
+});
+
+test("空配列なら null", () => {
+  expect(maxOf([])).toBe(null);
+});
+
+test("マイナスだけでも動く", () => {
+  expect(maxOf([-5, -2, -9])).toBe(-2);
+});
+`,
+      hint: "if (nums.length === 0) return null; を先頭に足す（Math.max(...[]) は -Infinity になってしまう）。",
+      check: (logs) =>
+        logs.filter((l) => l.text.startsWith("✓")).length >= 3 &&
+        !logs.some((l) => l.text.startsWith("✗")),
+    },
+  },
+  {
+    id: "test-async", module: M9, title: "非同期処理をテストする",
+    paras: [
+      "データ取得のような非同期の処理もテストできる。コツはひとつだけ——待つこと。テストの中で await を使い、結果が届いてから検証する。",
+      "await を忘れると、まだ何も入っていない Promise を検証してしまい、意味のないテストになる（そして往々にして「なぜか通る」ので気づけない）。",
+      "非同期のテストは、実務でいちばんバグを見つけてくれる場所のひとつ。API の形が変わったとき、真っ先に教えてくれる。",
+    ],
+    points: [
+      "test(\"...\", async () => { const data = await fetchUsers(); ... })",
+      "await を忘れると検証が空振りする",
+      "件数・中身の形・欠けていないかを見る",
+    ],
+    example: `test("ユーザーを3人取得できる", async () => {
+  const users = await fetchUsers();
+  expect(users.length).toBe(3);
+});
+
+test("ユーザーは name を持っている", async () => {
+  const users = await fetchUsers();
+  expect(users[0].name).toBe("Aoi");
+});`,
+    task: {
+      prompt: "fetchPosts() のテストを2つ書こう（件数と、1件目の author）。async / await を忘れずに。",
+      starter: `test("投稿を5件取得できる", async () => {
+  const posts = await fetchPosts();
+  expect(posts.length).toBe(5);
+});
+
+// TODO: 1件目の author が "Aoi" であることを確かめるテストを書く
+`,
+      hint: "test(\"1件目の著者\", async () => { const posts = await fetchPosts(); expect(posts[0].author).toBe(\"Aoi\"); });",
+      check: (logs, code) =>
+        /await/.test(code) &&
+        logs.filter((l) => l.text.startsWith("✓")).length >= 2 &&
+        !logs.some((l) => l.text.startsWith("✗")),
+    },
+  },
+  {
+    id: "test-tdd", module: M9, title: "テストから書く（TDD）",
+    paras: [
+      "順番をひっくり返す書き方がある。先にテストを書き、それが落ちることを確かめてから、通るように実装する。これがテスト駆動開発（TDD）。",
+      "サイクルは3つ。レッド（落ちるテストを書く）→ グリーン（通るように最小限で実装する）→ リファクタ（動いたまま整える）。",
+      "何を作るかが曖昧なまま手を動かすと迷子になるが、先にテストを書くと「完成の定義」が最初に決まる。仕様が先、実装が後——設計の道具としてのテスト。",
+    ],
+    points: [
+      "レッド → グリーン → リファクタ",
+      "最初に落ちるのを見届ける（テスト自体のバグを防げる）",
+      "実装は「通す最小限」でよい。整えるのは最後",
+    ],
+    example: `// 1. まずテストを書く（この時点では落ちる）
+test("2文字を隠す", () => {
+  expect(mask("secret")).toBe("se****");
+});
+
+// 2. 通るように実装する
+const mask = (text) =>
+  text.slice(0, 2) + "*".repeat(text.length - 2);`,
+    task: {
+      prompt: "先に書いてあるテストを読み、それを通す関数 slugify を実装しよう（空白をハイフンに、小文字に）。",
+      starter: `// TODO: テストを通す slugify を実装する
+const slugify = (text) => {
+  return text;
+};
+
+test("空白はハイフンになる", () => {
+  expect(slugify("Hello World")).toBe("hello-world");
+});
+
+test("小文字になる", () => {
+  expect(slugify("CodeLog")).toBe("codelog");
+});
+
+test("前後の空白は消える", () => {
+  expect(slugify("  hi there  ")).toBe("hi-there");
+});
+`,
+      hint: "text.trim().toLowerCase().replaceAll(\" \", \"-\") で3つとも通る。",
+      check: (logs) =>
+        logs.filter((l) => l.text.startsWith("✓")).length >= 3 &&
+        !logs.some((l) => l.text.startsWith("✗")),
+    },
+  },
+  {
+    id: "test-design", module: M9, title: "テストしやすいコードは、良いコード",
+    paras: [
+      "テストを書こうとすると気づくことがある。テストしにくい関数は、たいてい設計が悪い。",
+      "テストしにくいのは、外の世界に依存している関数——画面を直接書き換える、通信する、今の時刻を見る。逆に「入力を受け取って、値を返すだけ」の関数はテストが一瞬で書ける。",
+      "だから、計算やルール（＝アプリの本質）は純粋な関数に切り出し、画面や通信は外側に置く。テストのためにそうするのではなく、そうすると設計が良くなり、結果としてテストも書ける。",
+    ],
+    points: [
+      "純粋な関数 = 同じ入力なら必ず同じ出力・外に影響を与えない",
+      "計算・ルールは切り出す。DOM 操作や通信は外側に",
+      "テストしにくさは、設計を見直せというサイン",
+    ],
+    example: `// テストしにくい（画面と計算が混ざっている）
+function renderTotal(items) {
+  const total = items.reduce((s, i) => s + i.price, 0);
+  document.querySelector("#total").textContent = total;  // 外の世界
+}
+
+// テストしやすい（計算を切り出す）
+const calcTotal = (items) => items.reduce((s, i) => s + i.price, 0);
+
+test("合計を計算できる", () => {
+  expect(calcTotal([{ price: 100 }, { price: 250 }])).toBe(350);
+});`,
+    task: {
+      prompt: "税込み合計を求める純粋関数 totalWithTax（税10%・小数は四捨五入）を書き、テストを通そう。",
+      starter: `// TODO: 純粋関数として実装する（画面には触らない）
+const totalWithTax = (items) => {
+  return 0;
+};
+
+test("税込み合計を求められる", () => {
+  expect(totalWithTax([{ price: 100 }, { price: 250 }])).toBe(385);
+});
+
+test("空なら 0", () => {
+  expect(totalWithTax([])).toBe(0);
+});
+`,
+      hint: "const sum = items.reduce((s, i) => s + i.price, 0); return Math.round(sum * 1.1);",
+      check: (logs) =>
+        logs.filter((l) => l.text.startsWith("✓")).length >= 2 &&
+        !logs.some((l) => l.text.startsWith("✗")),
+    },
+  },
+  {
+    id: "test-real", module: M9, title: "自分のプロジェクトにテストを入れる",
+    paras: [
+      "ブラウザの中だけで終わらせない。自分の Next.js プロジェクトに、実際にテストを入れる。使うのは Vitest——ここまで書いてきた test / expect がそのまま動く。",
+      "入れ方は3手。npm i -D vitest jsdom、設定ファイルを置く、npm test。あとはこれまでと同じようにテストを書けばいい。",
+      "最初の1本は、自分のアプリの「計算やルール」の関数に。全部にテストを書く必要はない。壊れたら痛い場所から、1本ずつ足していく。",
+    ],
+    points: [
+      "npm i -D vitest jsdom / package.json に \"test\": \"vitest run\"",
+      "テストは src/*.test.ts のように置く",
+      "壊れたら痛い場所から。カバレッジ100%を目指さない",
+    ],
+    example: `# 導入
+npm i -D vitest jsdom
+
+# package.json
+"scripts": { "test": "vitest run" }
+
+# lib/total.test.ts
+import { describe, expect, it } from "vitest";
+import { totalWithTax } from "./total";
+
+it("税込み合計を求められる", () => {
+  expect(totalWithTax([{ price: 100 }])).toBe(110);
+});
+
+# 実行
+npm test`,
+    checklist: [
+      "自分のプロジェクトで npm i -D vitest jsdom を実行した",
+      "package.json の scripts に \"test\": \"vitest run\" を足した",
+      "アプリの中の「計算やルール」の関数を1つ選んだ",
+      "その関数のテストを1本書いて、npm test で ✓ になった",
+      "わざと実装を壊して、テストが ✗ になることを確かめた",
+      "テストを直して push した",
     ],
   },
 ];

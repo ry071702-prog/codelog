@@ -45,6 +45,83 @@ const fetchPosts = () =>
     )
   );
 
+// ── MODULE 09（テスト）用のミニテストランナー。
+// Vitest / Jest とほぼ同じ書き味（test / expect / toBe ...）をブラウザ内で再現する。
+// 実務のテストコードがそのまま読める・書けるようになることが狙い。
+function makeTestApi(report) {
+  const isEqual = (a, b) => {
+    if (a === b) return true;
+    if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) {
+      return false;
+    }
+    const ka = Object.keys(a);
+    const kb = Object.keys(b);
+    if (ka.length !== kb.length) return false;
+    return ka.every((k) => isEqual(a[k], b[k]));
+  };
+
+  const show = (v) => {
+    try {
+      return typeof v === "string" ? `"${v}"` : JSON.stringify(v);
+    } catch {
+      return String(v);
+    }
+  };
+
+  const expect = (actual) => ({
+    toBe(expected) {
+      if (!Object.is(actual, expected)) {
+        throw new Error(`${show(expected)} を期待したが ${show(actual)} だった`);
+      }
+    },
+    toEqual(expected) {
+      if (!isEqual(actual, expected)) {
+        throw new Error(`${show(expected)} を期待したが ${show(actual)} だった`);
+      }
+    },
+    toBeTruthy() {
+      if (!actual) throw new Error(`真であることを期待したが ${show(actual)} だった`);
+    },
+    toBeFalsy() {
+      if (actual) throw new Error(`偽であることを期待したが ${show(actual)} だった`);
+    },
+    toContain(item) {
+      const ok = Array.isArray(actual)
+        ? actual.includes(item)
+        : typeof actual === "string" && actual.includes(item);
+      if (!ok) throw new Error(`${show(actual)} は ${show(item)} を含んでいない`);
+    },
+    toThrow() {
+      if (typeof actual !== "function") {
+        throw new Error("toThrow には関数を渡す（expect(() => f()).toThrow()）");
+      }
+      let threw = false;
+      try {
+        actual();
+      } catch {
+        threw = true;
+      }
+      if (!threw) throw new Error("エラーが投げられることを期待したが、投げられなかった");
+    },
+  });
+
+  const test = async (name, fn) => {
+    try {
+      await fn();
+      report.passed += 1;
+      self.postMessage({ type: "log", text: `✓ ${name}` });
+    } catch (err) {
+      report.failed += 1;
+      self.postMessage({
+        type: "error",
+        text: `✗ ${name} — ${err && err.message ? err.message : err}`,
+      });
+    }
+  };
+
+  return { test, expect };
+}
+
 self.onmessage = async (e) => {
   const { code } = e.data;
   const push = (type) => (...args) =>
@@ -55,18 +132,31 @@ self.onmessage = async (e) => {
     warn: push("warn"),
     error: push("error"),
   };
+
+  const report = { passed: 0, failed: 0 };
+  const { test, expect } = makeTestApi(report);
+
   try {
     const fn = new Function(
       "console",
       "fetchUsers",
       "fetchPosts",
+      "test",
+      "expect",
       `return (async () => {\n${code}\n})();`
     );
-    await fn(sandboxConsole, fetchUsers, fetchPosts);
+    await fn(sandboxConsole, fetchUsers, fetchPosts, test, expect);
   } catch (err) {
     self.postMessage({
       type: "error",
       text: String(err && err.message ? err.message : err),
+    });
+  }
+
+  if (report.passed + report.failed > 0) {
+    self.postMessage({
+      type: report.failed > 0 ? "warn" : "log",
+      text: `\n${report.passed} passed, ${report.failed} failed`,
     });
   }
   self.postMessage({ type: "done" });

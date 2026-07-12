@@ -53,6 +53,8 @@ interface TutorRequest {
   code: string;
   logs: Log[];
   question: string;
+  /** DOM / React レッスンのとき、学習者の画面に実際に映っている HTML */
+  dom?: string;
 }
 
 function isValidBody(body: unknown): body is TutorRequest {
@@ -88,7 +90,7 @@ export async function POST(req: Request) {
     return Response.json({ error: "リクエストの形式が不正です" }, { status: 400 });
   }
 
-  const { lessonId, code, logs, question } = body;
+  const { lessonId, code, logs, question, dom } = body;
   const lesson = getLesson(lessonId);
   if (!lesson) {
     return Response.json({ error: "レッスンが見つかりません" }, { status: 404 });
@@ -120,6 +122,15 @@ ${lesson.preview.html}
 `
     : "";
 
+  const domSection =
+    lesson.preview && typeof dom === "string" && dom.trim().length > 0
+      ? `\n# いま学習者の画面に実際に映っているもの（実行結果の画面）
+\`\`\`html
+${dom.slice(0, 2000)}
+\`\`\`
+`
+      : "";
+
   const userContent = `# いま学習中のレッスン
 モジュール: ${lesson.module}
 タイトル: ${lesson.title}
@@ -134,7 +145,7 @@ ${code.slice(0, 4000)}
 
 # 実行結果 (コンソール出力)
 ${logsText}
-
+${domSection}
 # 学習者の質問
 ${question}`;
 

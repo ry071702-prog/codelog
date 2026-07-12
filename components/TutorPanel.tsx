@@ -53,9 +53,11 @@ interface TutorPanelProps {
   lessonId: string;
   code: string;
   logs: Log[];
+  /** DOM / React レッスンのとき、いまプレビューに映っている画面（innerHTML） */
+  dom?: string;
 }
 
-export function TutorPanel({ lessonId, code, logs }: TutorPanelProps) {
+export function TutorPanel({ lessonId, code, logs, dom }: TutorPanelProps) {
   const [messages, setMessages] = useState<TutorMessage[]>([]);
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
@@ -85,7 +87,7 @@ export function TutorPanel({ lessonId, code, logs }: TutorPanelProps) {
       const res = await fetch("/api/tutor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lessonId, code, logs, question: q }),
+        body: JSON.stringify({ lessonId, code, logs, dom, question: q }),
       });
       const data: { answer?: string; error?: string } = await res.json();
       if (!res.ok || !data.answer) {

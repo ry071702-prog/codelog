@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "predev": "node scripts/prepare-ts.mjs",
-    "prebuild": "node scripts/prepare-ts.mjs"
+    "prebuild": "node scripts/prepare-ts.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.111.0",
@@ -22,10 +23,13 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.3",
     "esbuild": "^0.28.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "jsdom": "^29.1.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }
