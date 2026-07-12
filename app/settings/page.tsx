@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { AccountPanel } from "@/components/AccountPanel";
 import { ProgressBackup } from "@/components/ProgressBackup";
 
 export const metadata: Metadata = {
@@ -21,7 +22,10 @@ export default function SettingsPage() {
         <h1 className="mb-6 text-[27px] font-extrabold tracking-tight text-ink">
           設定
         </h1>
-        <ProgressBackup />
+        <div className="flex flex-col gap-5">
+          <AccountPanel />
+          <ProgressBackup />
+        </div>
       </main>
     </div>
   );
