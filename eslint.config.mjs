@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // プロトタイプ（参照用・移植元の正）は lint 対象外
     "codelog.jsx",
+    // TS レッスン用に node_modules からコピーしてくる生成物
+    "public/vendor/**",
   ]),
 ]);
 

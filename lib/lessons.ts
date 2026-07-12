@@ -30,6 +30,8 @@ export interface Lesson {
   task: Task;
   /** これがあるレッスンは、Worker ではなく sandbox iframe のプレビューで実行する */
   preview?: Preview;
+  /** "ts" のレッスンは、実行前に本物の tsc で型チェックする（既定は "js"） */
+  lang?: "js" | "ts";
 }
 
 const M1 = "MODULE 01 — 土台";
@@ -37,6 +39,7 @@ const M2 = "MODULE 02 — 一歩深く";
 const M3 = "MODULE 03 — データを自在に";
 const M4 = "MODULE 04 — 設計とモダンJS";
 const M5 = "MODULE 05 — ブラウザとDOM";
+const M6 = "MODULE 06 — TypeScript";
 
 export const lessons: Lesson[] = [
   {
@@ -1232,10 +1235,378 @@ render();`,
         /createElement/.test(code) && /addEventListener/.test(code) && !!dom && (dom.match(/<li/g) ?? []).length >= 1,
     },
   },
+
+  // ── MODULE 06 — TypeScript ─────────────────────────────
+  // lang: "ts" のレッスンは、実行前にブラウザ内の本物の tsc が型チェックする。
+  // 型エラーがあれば、そこで止まってエラーが出る（＝実行前にバグが見つかる体験）。
+  {
+    id: "ts-intro", module: M6, title: "TypeScript — 実行する前にバグを見つける",
+    lang: "ts",
+    paras: [
+      "JavaScript は、間違いを実行するまで教えてくれない。数値のつもりの変数に文字列が入っていても、その行が動くまで誰も気づけない。",
+      "TypeScript は JavaScript に「型」を足した言語。値の種類をあらかじめ書いておくと、書いた瞬間・実行する前に矛盾を指摘してくれる。書いたコードは JavaScript に変換されてから動くので、動き自体はこれまでと同じ。",
+      "型は変数名のあとに : で書く。const price: number = 1000 のように。ここから先のレッスンでは、実行を押すとまず型チェックが走る——わざと間違えて、怒られてみるのが一番はやい。",
+    ],
+    points: [
+      "型注釈は 変数名: 型（number / string / boolean）",
+      "型エラーが出ると、コードは実行すらされない",
+      "変換されて動くのはただの JavaScript。実行時に型は消える",
+    ],
+    example: `const price: number = 1000;
+const name: string = "codelog";
+const isOpen: boolean = true;
+
+console.log(price, name, isOpen);
+
+// price = "安い";   // ← これを外すと型エラーになる`,
+    task: {
+      prompt: "count に number、message に string の型注釈をつけて実行しよう。試しに count に文字列を入れて、型エラーを見てから直すのがおすすめ。",
+      starter: `const count = 3;
+const message = "個あります";
+
+console.log(count + message);`,
+      hint: "const count: number = 3; のように、変数名のあとに : 型 を書き足す。",
+      check: (logs, code) =>
+        /:\s*number/.test(code) && /:\s*string/.test(code) && logs.some((l) => l.type === "log"),
+    },
+  },
+  {
+    id: "ts-infer", module: M6, title: "型推論 — 書かなくても型はついている",
+    lang: "ts",
+    paras: [
+      "実は、型注釈は毎回書く必要がない。const price = 1000 と書けば、TypeScript は「これは number だ」と自分で判断する。これが型推論。",
+      "だから実務では、推論が効くところは書かず、推論が効かないところにだけ型を書く。代表が関数の引数——外から何が渡ってくるかは推論できないので、明示しないと「暗黙の any」として怒られる。",
+      "any は「何でもあり」を意味する型で、これを使うと型チェックが効かなくなる。TypeScript を使う意味が消えるので、原則使わない。",
+    ],
+    points: [
+      "変数は推論に任せてよい（書きすぎない）",
+      "関数の引数は推論できない → 型を書く",
+      "any は最後の手段。使うくらいなら unknown で受けて絞り込む",
+    ],
+    example: `const price = 1000;        // number と推論される
+const items = ["a", "b"];  // string[] と推論される
+
+// 引数は推論できないので、書かないとエラーになる
+function double(n: number) {
+  return n * 2;            // 戻り値 number も推論される
+}
+
+console.log(double(price));`,
+    task: {
+      prompt: "greet 関数の引数に型をつけて、エラーを消そう（変数の方には型を書かないままでOK）。",
+      starter: `const user = "りーたん";
+
+function greet(name) {
+  return \`こんにちは、\${name}さん\`;
+}
+
+console.log(greet(user));`,
+      hint: "function greet(name: string) と書く。変数 user は推論に任せていい。",
+      check: (logs, code) =>
+        /name\s*:\s*string/.test(code) && !/\bany\b/.test(code) && logs.some((l) => l.type === "log"),
+    },
+  },
+  {
+    id: "ts-func", module: M6, title: "関数に型をつける",
+    lang: "ts",
+    paras: [
+      "関数の型は「何を受け取って、何を返すか」を宣言するもの。引数の型は必須、戻り値の型は推論に任せてもよいが、書いておくと「作ったつもりの関数」と実装のズレをその場で検出できる。",
+      "戻り値を書くと、たとえば「number を返すはずなのに、条件によっては undefined を返している」といった見落としを、実行前に指摘してくれる。",
+      "何も返さない関数の戻り値は void と書く。",
+    ],
+    points: [
+      "書式: function 名(引数: 型): 戻り値の型 { ... }",
+      "アロー関数なら const f = (n: number): number => n * 2;",
+      "戻り値を書くと「返し忘れ」がすぐわかる",
+    ],
+    example: `function add(a: number, b: number): number {
+  return a + b;
+}
+
+const shout = (text: string): string => text.toUpperCase();
+
+console.log(add(2, 3));
+console.log(shout("hello"));`,
+    task: {
+      prompt: "税込み価格を計算する関数 withTax に、引数と戻り値の型をつけて完成させよう（税率10%、小数は Math.round で丸める）。",
+      starter: `function withTax(price) {
+  // TODO: 税込み価格（10%）を返す
+}
+
+console.log(withTax(1000));   // 1100 になるはず`,
+      hint: "function withTax(price: number): number { return Math.round(price * 1.1); }",
+      check: (logs, code) =>
+        /price\s*:\s*number/.test(code) && logs.some((l) => l.type === "log" && /1100/.test(l.text)),
+    },
+  },
+  {
+    id: "ts-object", module: M6, title: "オブジェクトの型 と type エイリアス",
+    lang: "ts",
+    paras: [
+      "オブジェクトの形（どのプロパティが、どんな型で入っているか）も型にできる。{ name: string; age: number } のように書く。",
+      "同じ形を何度も書くのは無駄なので、type で名前をつける。これが型エイリアス。名前がつくと、関数の引数にも戻り値にも使い回せる。",
+      "こうしておくと、プロパティ名のタイプミス（user.nmae）や、存在しないプロパティへのアクセスが、その場で赤くなる。地味だが、実務で最も救われる場面のひとつ。",
+    ],
+    points: [
+      "type User = { name: string; age: number };",
+      "型の中の区切りは , でも ; でもよい（; が主流）",
+      "型は値ではない。実行される JavaScript には残らない",
+    ],
+    example: `type User = { name: string; age: number };
+
+const user: User = { name: "Aoi", age: 24 };
+
+function intro(u: User): string {
+  return \`\${u.name}（\${u.age}歳）\`;
+}
+
+console.log(intro(user));`,
+    task: {
+      prompt: "type Book を作り（title: string, pages: number）、本の情報を「タイトル（Nページ）」の形で出力しよう。",
+      starter: `// TODO: type Book を定義する
+
+const book = { title: "リーダブルコード", pages: 260 };
+
+console.log(\`\${book.title}（\${book.pages}ページ）\`);`,
+      hint: "type Book = { title: string; pages: number }; と書き、const book: Book = ... と型をつける。",
+      check: (logs, code) =>
+        /type\s+Book\s*=/.test(code) && /:\s*Book\b/.test(code) && logs.some((l) => l.type === "log"),
+    },
+  },
+  {
+    id: "ts-union", module: M6, title: "ユニオン型 — 取りうる値を絞る",
+    lang: "ts",
+    paras: [
+      "| でつなぐと「AかB」を表せる。これがユニオン型。number | string なら数値か文字列のどちらか。",
+      "強力なのは、文字列そのものを型にできること（リテラル型）。type Status = \"todo\" | \"doing\" | \"done\" と書けば、それ以外の文字列は代入できなくなる。タイプミスが型エラーになる。",
+      "ユニオンの値を使うときは、if で種類を確かめてから使う。TypeScript は if を通ったあとの型を賢く絞り込んでくれる（絞り込み／ナローイング）。",
+    ],
+    points: [
+      "type Status = \"todo\" | \"done\" — 決まった値だけを許す",
+      "if で確かめると、その中では型が絞られる",
+      "switch と組み合わせると「全部の場合を書いたか」まで見てくれる",
+    ],
+    example: `type Status = "todo" | "doing" | "done";
+
+function label(status: Status): string {
+  if (status === "todo") return "未着手";
+  if (status === "doing") return "作業中";
+  return "完了";
+}
+
+console.log(label("doing"));
+// console.log(label("やる"));   // ← 型エラー`,
+    task: {
+      prompt: "type Size を \"S\" | \"M\" | \"L\" で定義し、サイズに応じた説明を返す関数を書いて出力しよう。",
+      starter: `// TODO: type Size を定義する
+
+function describe(size: Size): string {
+  // TODO: サイズごとの説明を返す
+}
+
+console.log(describe("M"));`,
+      hint: "type Size = \"S\" | \"M\" | \"L\"; 関数の中は if (size === \"S\") return \"小さめ\"; のように分ける。",
+      check: (logs, code) =>
+        /type\s+Size\s*=/.test(code) && /\|/.test(code) && logs.some((l) => l.type === "log"),
+    },
+  },
+  {
+    id: "ts-optional", module: M6, title: "「無いかもしれない」を型で扱う",
+    lang: "ts",
+    paras: [
+      "実務のバグで最も多いのが「undefined のものを触ってしまった」系。TypeScript はこれを型で防ぐ。",
+      "プロパティ名のあとに ? をつけると「あってもなくてもいい」を表す（オプショナル）。すると型は number | undefined になり、そのまま計算に使おうとすると怒られる。",
+      "使う前に if で存在を確かめるか、?? で既定値を用意する。「確かめてから使え」を型が強制してくれる——これが null チェック漏れを消す仕組み。",
+    ],
+    points: [
+      "age?: number は number | undefined と同じ",
+      "使う前に if (user.age !== undefined) で絞り込む",
+      "?? で既定値（user.age ?? 0）",
+    ],
+    example: `type User = { name: string; age?: number };
+
+const a: User = { name: "Aoi", age: 24 };
+const b: User = { name: "Ken" };            // age が無くてもOK
+
+function show(u: User): string {
+  const age = u.age ?? 0;                    // 無ければ 0
+  return \`\${u.name}: \${age}歳\`;
+}
+
+console.log(show(a));
+console.log(show(b));`,
+    task: {
+      prompt: "nickname を任意（オプショナル）にして、無い場合は name を使って挨拶しよう。",
+      starter: `type Profile = { name: string; nickname: string };
+
+const p1: Profile = { name: "Sato", nickname: "サトちん" };
+const p2: Profile = { name: "Suzuki" };   // ← 今は型エラーになる
+
+function hello(p: Profile): string {
+  // TODO: nickname があればそれを、無ければ name を使う
+  return "";
+}
+
+console.log(hello(p1));
+console.log(hello(p2));`,
+      hint: "nickname?: string にして、return \`こんにちは、${p.nickname ?? p.name}さん\`; のように書く。",
+      check: (logs, code) =>
+        /nickname\?\s*:/.test(code) && logs.filter((l) => l.type === "log").length >= 2,
+    },
+  },
+  {
+    id: "ts-array", module: M6, title: "配列とジェネリクス",
+    lang: "ts",
+    paras: [
+      "配列の型は「中身の型 + []」。number[] は数値の配列、User[] はユーザーの配列。中身が揃っていることが保証されるので、map や filter のあとも型が正しく追いかけられる。",
+      "Array<number> という書き方もできる。この <> は「中身の型をあとから指定する」仕組みで、ジェネリクスと呼ばれる。Promise<User[]>（ユーザー配列を返す約束）のように、他の型でも使う。",
+      "自分でジェネリクスを書くこともできる。<T> は「呼ばれるときに決まる型」のこと。中身の型が何であっても使える関数を、型安全なまま書ける。",
+    ],
+    points: [
+      "number[] と Array<number> は同じ意味",
+      "Promise<User[]> = ユーザー配列を返す非同期処理",
+      "<T> は「使うときに決まる型」の入れ物",
+    ],
+    example: `const scores: number[] = [80, 95, 60];
+const names: Array<string> = ["Aoi", "Ken"];
+
+// 中身が何であれ「最初の1件」を返す関数
+function first<T>(list: T[]): T | undefined {
+  return list[0];
+}
+
+console.log(first(scores));   // number として扱える
+console.log(first(names));    // string として扱える`,
+    task: {
+      prompt: "点数の配列から平均点を返す関数 average に型をつけて完成させよう。",
+      starter: `// TODO: 引数と戻り値に型をつける
+function average(scores) {
+  const total = scores.reduce((sum, n) => sum + n, 0);
+  return total / scores.length;
+}
+
+console.log(average([80, 95, 60, 100]));`,
+      hint: "function average(scores: number[]): number { ... }",
+      check: (logs, code) =>
+        /(number\[\]|Array<number>)/.test(code) && logs.some((l) => l.type === "log"),
+    },
+  },
+  {
+    id: "ts-interface", module: M6, title: "interface と、型の設計",
+    lang: "ts",
+    paras: [
+      "オブジェクトの形を表すもう1つの書き方が interface。type とほぼ同じだが、あとから同名で宣言して項目を足せる（拡張できる）点が違う。ライブラリの型を拡張するときに効いてくる。",
+      "使い分けの目安はシンプル。オブジェクトの形なら interface でも type でもよく、チームの慣習に合わせる。ユニオン型など「形」以外を表すなら type 一択。",
+      "大事なのは書き方ではなく、型を先に設計すること。「このアプリのデータはこういう形」と型で書いてから実装に入ると、迷いが減り、あとから読む人にも設計が伝わる。",
+    ],
+    points: [
+      "interface User { name: string; age: number }（= はつけない）",
+      "extends で他の型を土台にできる",
+      "ユニオン型は type でしか書けない",
+    ],
+    example: `interface Person {
+  name: string;
+}
+
+interface User extends Person {   // Person を土台にする
+  id: number;
+}
+
+const u: User = { id: 1, name: "Aoi" };
+console.log(u);`,
+    task: {
+      prompt: "interface Item（name: string, price: number）を作り、税込み価格つきで出力しよう。",
+      starter: `// TODO: interface Item を定義する
+
+const item: Item = { name: "コーヒー", price: 500 };
+
+function total(i: Item): number {
+  return Math.round(i.price * 1.1);
+}
+
+console.log(\`\${item.name}: \${total(item)}円\`);`,
+      hint: "interface Item { name: string; price: number } と書く（= は不要）。",
+      check: (logs, code) =>
+        /interface\s+Item\s*\{/.test(code) && logs.some((l) => l.type === "log"),
+    },
+  },
+  {
+    id: "ts-async", module: M6, title: "非同期処理に型をつける",
+    lang: "ts",
+    paras: [
+      "async 関数は必ず Promise を返す。だから戻り値の型は Promise<T> になる。T は「待ったあとに手に入るもの」の型。",
+      "await すると Promise<User[]> は User[] になる。この対応が型で表現されているので、await し忘れると「Promise を配列として扱っている」と即座に怒られる——非同期でいちばん多いミスが、型で防げる。",
+      "codelog の fetchUsers() は Promise<User[]> を返す。await した結果に型がついているので、u.name は補完され、u.nmae は型エラーになる。",
+    ],
+    points: [
+      "async 関数の戻り値は必ず Promise<...>",
+      "await し忘れは型エラーになる（実行前に気づける）",
+      "配列の中身の型は、そのまま map の引数にも伝わる",
+    ],
+    example: `type User = { name: string; age: number };
+
+async function loadUsers(): Promise<User[]> {
+  const users = await fetchUsers();
+  return users;
+}
+
+const users = await loadUsers();
+users.forEach((u) => console.log(u.name));`,
+    task: {
+      prompt: "fetchUsers で取得したユーザーのうち、25歳以上の人だけを名前で出力しよう（型注釈もつける）。",
+      starter: `type User = { name: string; age: number };
+
+async function loadAdults(): Promise<User[]> {
+  const users = await fetchUsers();
+  // TODO: 25歳以上だけに絞って返す
+  return users;
+}
+
+const adults = await loadAdults();
+adults.forEach((u) => console.log(u.name));`,
+      hint: "return users.filter((u) => u.age >= 25); — filter のあとも User[] のままなので型は通る。",
+      check: (logs, code) =>
+        /Promise<\s*User\[\]\s*>/.test(code) && /filter/.test(code) &&
+        logs.filter((l) => l.type === "log").length === 2,
+    },
+  },
+  {
+    id: "ts-exercise", module: M6, title: "ミニ演習 — 型でバグを捕まえる",
+    lang: "ts",
+    paras: [
+      "総仕上げ。型のない JavaScript として書かれた集計コードに、型をつけていく。",
+      "面白いのはここから——型をつけた瞬間に、隠れていたバグが1つ表面化する。実行しても一見それらしい結果が出てしまう類のバグで、JavaScript のままなら本番で初めて気づいたはずのもの。",
+      "型は面倒ごとではなく、書いた本人より先にコードを読んでくれる相棒。ここまで来たら、次は React でこの型を活かす番。",
+    ],
+    points: [
+      "まず type を書く。実装はそのあと",
+      "型エラーが出たら、それはあなたの勝ち（実行前に見つかった）",
+    ],
+    example: `// 型がないと、こう書けてしまう
+// const total = posts.length + users;   // 配列 + 数値。実行はできるが結果は謎`,
+    task: {
+      prompt: "User と Post に型をつけ、各ユーザーの投稿数を「名前: N件」の形で出力しよう（型エラーが出たら、それを手がかりに直す）。",
+      starter: `type User = { name: string; age: number };
+// TODO: type Post を定義する（author: string, title: string）
+
+const users: User[] = await fetchUsers();
+const posts = await fetchPosts();
+
+users.forEach((u) => {
+  // TODO: この u の投稿数を数える
+  const count = 0;
+  console.log(\`\${u.name}: \${count}件\`);
+});`,
+      hint: "const count = posts.filter((p) => p.author === u.name).length; 型をつけた posts なら p.author が補完される。",
+      check: (logs, code) =>
+        /type\s+Post\s*=/.test(code) && /filter/.test(code) &&
+        logs.filter((l) => l.type === "log").length >= 3 &&
+        logs.some((l) => /件/.test(l.text) && !/0件/.test(l.text)),
+    },
+  },
 ];
 
 export const roadmap = [
-  "Module 06 — TypeScript",
   "Module 07 — React / Next.js",
   "Module 08 — 個人開発の実践",
 ];

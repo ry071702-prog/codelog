@@ -1358,6 +1358,114 @@ list.appendChild(li);   // ここで画面に出る`,
     lessonIds: ["dom-intro"],
     aliases: ["sandbox"],
   },
+
+  // ── MODULE 06（TypeScript）で登場する用語 ──
+  {
+    slug: "typescript",
+    term: "TypeScript",
+    category: "文法",
+    oneLiner: "JavaScript に「型」を足した言語。実行する前に矛盾を教えてくれる。",
+    description:
+      "JavaScript のすべてに加えて、値の種類（型）を書けるようにした言語。書いた瞬間に矛盾を指摘してくれるので、実行して初めて気づくバグが激減する。最終的には JavaScript に変換（トランスパイル）されて動くため、動作そのものは JavaScript と同じ。React や Next.js の実務では、ほぼ標準で使われる。",
+    lessonIds: ["ts-intro"],
+    aliases: ["TS", ".ts"],
+  },
+  {
+    slug: "type-annotation",
+    term: "型注釈",
+    reading: "かたちゅうしゃく",
+    category: "文法",
+    oneLiner: "「この値は number」と型を明記する書き方。変数名のあとに : 型。",
+    description:
+      "const price: number = 1000 のように、コロンのあとに型を書く。関数の引数のように推論が効かない場所では必須。逆に、書かなくても分かる場所（const price = 1000）では省くのが普通で、書きすぎるとかえって読みにくくなる。",
+    example: `const name: string = "codelog";
+function double(n: number): number {
+  return n * 2;
+}`,
+    lessonIds: ["ts-intro", "ts-func"],
+    aliases: ["型アノテーション"],
+  },
+  {
+    slug: "type-inference",
+    term: "型推論",
+    reading: "かたすいろん",
+    category: "文法",
+    oneLiner: "書かなくても TypeScript が型を判断してくれる仕組み。",
+    description:
+      "const price = 1000 と書けば number、[\"a\", \"b\"] なら string[] と、代入した値から型が決まる。だから変数にはほとんど型を書かなくていい。推論できないのは、外から値が渡ってくる関数の引数——ここを書かないと「暗黙の any」として怒られる。",
+    lessonIds: ["ts-infer"],
+  },
+  {
+    slug: "any",
+    term: "any",
+    category: "文法",
+    oneLiner: "「何でもあり」の型。使うと型チェックが効かなくなる。",
+    description:
+      "any をつけた値は何にでも代入でき、どんなプロパティにも触れてしまう。つまり TypeScript を使う意味が消える。型がわからない値は any ではなく unknown で受け、if で種類を確かめてから使うのが正解。",
+    lessonIds: ["ts-infer"],
+    aliases: ["unknown"],
+  },
+  {
+    slug: "type-alias",
+    term: "type エイリアス",
+    category: "文法",
+    oneLiner: "型に名前をつけて使い回す仕組み。type User = { ... }。",
+    description:
+      "同じオブジェクトの形を何度も書かずに済むよう、型に名前をつける。ユニオン型など「オブジェクトの形」以外も表せるのが interface との違い。型は実行時には消えるので、JavaScript の出力には一切残らない。",
+    example: `type User = { name: string; age: number };
+const user: User = { name: "Aoi", age: 24 };`,
+    lessonIds: ["ts-object"],
+    aliases: ["型エイリアス"],
+  },
+  {
+    slug: "union-type",
+    term: "ユニオン型",
+    category: "文法",
+    oneLiner: "「AかB」を表す型。| でつなぐ。",
+    description:
+      "number | string なら数値か文字列のどちらか。文字列そのものを型にできる（リテラル型）のが強力で、type Status = \"todo\" | \"done\" と書けば、それ以外の文字列は代入できず、タイプミスが型エラーになる。使うときは if で種類を確かめる（絞り込み）。",
+    lessonIds: ["ts-union"],
+    aliases: ["リテラル型", "ナローイング", "絞り込み"],
+  },
+  {
+    slug: "optional-property",
+    term: "オプショナルプロパティ",
+    category: "文法",
+    oneLiner: "「あってもなくてもいい」項目。名前のあとに ? をつける。",
+    description:
+      "age?: number は number | undefined と同じ意味。そのまま計算に使おうとすると型エラーになり、if で存在を確かめるか ?? で既定値を用意することを強制される。null / undefined 由来のバグが型で防げる仕組み。",
+    lessonIds: ["ts-optional"],
+    aliases: ["strictNullChecks"],
+  },
+  {
+    slug: "generics",
+    term: "ジェネリクス",
+    category: "文法",
+    oneLiner: "「中身の型」をあとから決められる仕組み。<T> で書く。",
+    description:
+      "Array<number>、Promise<User[]> の <> がそれ。自分で書くこともでき、function first<T>(list: T[]): T | undefined のようにすると、中身が何であっても型安全なまま使い回せる関数になる。T は「呼ばれるときに決まる型」の入れ物。",
+    lessonIds: ["ts-array"],
+    aliases: ["generics", "<T>"],
+  },
+  {
+    slug: "interface",
+    term: "interface",
+    category: "設計",
+    oneLiner: "オブジェクトの形を表す型の書き方。あとから項目を足せる。",
+    description:
+      "interface User { name: string } のように = を使わずに書く。type とほぼ同じ役割だが、同名で再宣言して項目を追加できる（拡張）点が異なり、ライブラリの型を拡張するときに使う。ユニオン型は表せないので、そこは type の役目。",
+    lessonIds: ["ts-interface"],
+  },
+  {
+    slug: "transpile",
+    term: "トランスパイル",
+    category: "開発現場",
+    oneLiner: "あるコードを別の言語・形式に変換すること。TS → JS の変換もこれ。",
+    description:
+      "TypeScript はブラウザがそのまま実行できないので、型を取り除いた JavaScript に変換してから動かす。この変換がトランスパイル（コンパイルとほぼ同義に使われる）。codelog の TS レッスンも、ブラウザの中で型チェック → 変換 → 実行、という順で動いている。",
+    lessonIds: ["ts-intro"],
+    aliases: ["tsc", "コンパイル"],
+  },
 ];
 
 export function getTerm(slug: string): GlossaryTerm | undefined {
