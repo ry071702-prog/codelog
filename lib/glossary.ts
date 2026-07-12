@@ -9,6 +9,9 @@ export type GlossaryCategory =
   | "非同期"
   | "設計"
   | "Web"
+  | "TypeScript"
+  | "React"
+  | "テスト"
   | "Git/GitHub"
   | "開発現場"
   | "AI";
@@ -21,6 +24,9 @@ export const glossaryCategories: GlossaryCategory[] = [
   "非同期",
   "設計",
   "Web",
+  "TypeScript",
+  "React",
+  "テスト",
   "Git/GitHub",
   "開発現場",
   "AI",
@@ -1363,7 +1369,7 @@ list.appendChild(li);   // ここで画面に出る`,
   {
     slug: "typescript",
     term: "TypeScript",
-    category: "文法",
+    category: "TypeScript",
     oneLiner: "JavaScript に「型」を足した言語。実行する前に矛盾を教えてくれる。",
     description:
       "JavaScript のすべてに加えて、値の種類（型）を書けるようにした言語。書いた瞬間に矛盾を指摘してくれるので、実行して初めて気づくバグが激減する。最終的には JavaScript に変換（トランスパイル）されて動くため、動作そのものは JavaScript と同じ。React や Next.js の実務では、ほぼ標準で使われる。",
@@ -1374,7 +1380,7 @@ list.appendChild(li);   // ここで画面に出る`,
     slug: "type-annotation",
     term: "型注釈",
     reading: "かたちゅうしゃく",
-    category: "文法",
+    category: "TypeScript",
     oneLiner: "「この値は number」と型を明記する書き方。変数名のあとに : 型。",
     description:
       "const price: number = 1000 のように、コロンのあとに型を書く。関数の引数のように推論が効かない場所では必須。逆に、書かなくても分かる場所（const price = 1000）では省くのが普通で、書きすぎるとかえって読みにくくなる。",
@@ -1389,7 +1395,7 @@ function double(n: number): number {
     slug: "type-inference",
     term: "型推論",
     reading: "かたすいろん",
-    category: "文法",
+    category: "TypeScript",
     oneLiner: "書かなくても TypeScript が型を判断してくれる仕組み。",
     description:
       "const price = 1000 と書けば number、[\"a\", \"b\"] なら string[] と、代入した値から型が決まる。だから変数にはほとんど型を書かなくていい。推論できないのは、外から値が渡ってくる関数の引数——ここを書かないと「暗黙の any」として怒られる。",
@@ -1398,7 +1404,7 @@ function double(n: number): number {
   {
     slug: "any",
     term: "any",
-    category: "文法",
+    category: "TypeScript",
     oneLiner: "「何でもあり」の型。使うと型チェックが効かなくなる。",
     description:
       "any をつけた値は何にでも代入でき、どんなプロパティにも触れてしまう。つまり TypeScript を使う意味が消える。型がわからない値は any ではなく unknown で受け、if で種類を確かめてから使うのが正解。",
@@ -1408,7 +1414,7 @@ function double(n: number): number {
   {
     slug: "type-alias",
     term: "type エイリアス",
-    category: "文法",
+    category: "TypeScript",
     oneLiner: "型に名前をつけて使い回す仕組み。type User = { ... }。",
     description:
       "同じオブジェクトの形を何度も書かずに済むよう、型に名前をつける。ユニオン型など「オブジェクトの形」以外も表せるのが interface との違い。型は実行時には消えるので、JavaScript の出力には一切残らない。",
@@ -1420,7 +1426,7 @@ const user: User = { name: "Aoi", age: 24 };`,
   {
     slug: "union-type",
     term: "ユニオン型",
-    category: "文法",
+    category: "TypeScript",
     oneLiner: "「AかB」を表す型。| でつなぐ。",
     description:
       "number | string なら数値か文字列のどちらか。文字列そのものを型にできる（リテラル型）のが強力で、type Status = \"todo\" | \"done\" と書けば、それ以外の文字列は代入できず、タイプミスが型エラーになる。使うときは if で種類を確かめる（絞り込み）。",
@@ -1430,7 +1436,7 @@ const user: User = { name: "Aoi", age: 24 };`,
   {
     slug: "optional-property",
     term: "オプショナルプロパティ",
-    category: "文法",
+    category: "TypeScript",
     oneLiner: "「あってもなくてもいい」項目。名前のあとに ? をつける。",
     description:
       "age?: number は number | undefined と同じ意味。そのまま計算に使おうとすると型エラーになり、if で存在を確かめるか ?? で既定値を用意することを強制される。null / undefined 由来のバグが型で防げる仕組み。",
@@ -1440,7 +1446,7 @@ const user: User = { name: "Aoi", age: 24 };`,
   {
     slug: "generics",
     term: "ジェネリクス",
-    category: "文法",
+    category: "TypeScript",
     oneLiner: "「中身の型」をあとから決められる仕組み。<T> で書く。",
     description:
       "Array<number>、Promise<User[]> の <> がそれ。自分で書くこともでき、function first<T>(list: T[]): T | undefined のようにすると、中身が何であっても型安全なまま使い回せる関数になる。T は「呼ばれるときに決まる型」の入れ物。",
@@ -1450,7 +1456,7 @@ const user: User = { name: "Aoi", age: 24 };`,
   {
     slug: "interface",
     term: "interface",
-    category: "設計",
+    category: "TypeScript",
     oneLiner: "オブジェクトの形を表す型の書き方。あとから項目を足せる。",
     description:
       "interface User { name: string } のように = を使わずに書く。type とほぼ同じ役割だが、同名で再宣言して項目を追加できる（拡張）点が異なり、ライブラリの型を拡張するときに使う。ユニオン型は表せないので、そこは type の役目。",
@@ -1471,7 +1477,7 @@ const user: User = { name: "Aoi", age: 24 };`,
   {
     slug: "react",
     term: "React",
-    category: "Web",
+    category: "React",
     oneLiner: "画面を「部品の関数」として書き、状態が変われば自動で描き直すライブラリ。",
     description:
       "Meta 発の UI ライブラリで、現在のフロントエンドの事実上の標準。querySelector や appendChild を書く代わりに、「この状態のとき画面はこう見える」だけを宣言する。状態が変われば、React が差分を計算して必要な部分だけ描き直してくれる。",
@@ -1480,7 +1486,7 @@ const user: User = { name: "Aoi", age: 24 };`,
   {
     slug: "component",
     term: "コンポーネント",
-    category: "設計",
+    category: "React",
     oneLiner: "見た目を返す関数。React の画面はこの部品の組み合わせでできている。",
     description:
       "function Card() { return <div>…</div> } のように、JSX を返す関数がコンポーネント。名前は必ず大文字で始める（小文字だと普通の HTML タグとして扱われる）。小さく切って組み合わせるほど、読みやすく再利用しやすくなる。",
@@ -1489,7 +1495,7 @@ const user: User = { name: "Aoi", age: 24 };`,
   {
     slug: "jsx",
     term: "JSX",
-    category: "Web",
+    category: "React",
     oneLiner: "JavaScript の中に HTML のような書き方で画面を書ける記法。",
     description:
       "<h1>{name}さん</h1> のように書ける。{ } の中には JavaScript の式をそのまま置ける。ブラウザは JSX を直接読めないため、実行前に React.createElement() の呼び出しへ変換される（codelog もブラウザの中で変換してから動かしている）。class ではなく className と書く点に注意。",
@@ -1498,7 +1504,7 @@ const user: User = { name: "Aoi", age: 24 };`,
   {
     slug: "props",
     term: "props",
-    category: "設計",
+    category: "React",
     oneLiner: "親から子コンポーネントへ渡す値。読み取り専用。",
     description:
       "<Card title=\"コーヒー\" price={500} /> のように属性として渡し、function Card({ title, price }) で受け取る。データは親から子への一方通行で、子が勝手に書き換えることはできない。この一方通行が、データの流れを追いやすくしている。",
@@ -1507,7 +1513,7 @@ const user: User = { name: "Aoi", age: 24 };`,
   {
     slug: "use-state",
     term: "useState",
-    category: "Web",
+    category: "React",
     oneLiner: "コンポーネントに「変わる値」を持たせるフック。React の心臓部。",
     description:
       "const [count, setCount] = useState(0) と書くと、count が今の値、setCount が更新関数。setCount を呼ぶと React がその部分だけ自動で描き直す。直接 count = 1 と代入しても画面は変わらない——必ず更新関数を通す。前の値を元に更新するなら setCount((prev) => prev + 1) の形が安全。",
@@ -1516,7 +1522,7 @@ const user: User = { name: "Aoi", age: 24 };`,
   {
     slug: "use-effect",
     term: "useEffect",
-    category: "Web",
+    category: "React",
     oneLiner: "データ取得やタイマーなど「画面の外とのやりとり」を書く場所。",
     description:
       "useEffect(() => { 処理 }, []) と書くと、最初の描画のあとに1回だけ実行される。第2引数は依存リストで、ここに入れた値が変わるたびに再実行される。取得したデータは useState に入れれば、画面は自動で追いつく。",
@@ -1525,7 +1531,7 @@ const user: User = { name: "Aoi", age: 24 };`,
   {
     slug: "hook",
     term: "フック",
-    category: "Web",
+    category: "React",
     oneLiner: "use から始まる React の機能。状態や副作用をコンポーネントに足す。",
     description:
       "useState、useEffect、useRef などの総称。ルールがひとつだけあり、「コンポーネントの一番外側で、毎回同じ順番で呼ぶ」こと（if の中や、ループの中で呼ばない）。React は呼ばれた順番で状態を管理しているため。",
@@ -1535,7 +1541,7 @@ const user: User = { name: "Aoi", age: 24 };`,
   {
     slug: "react-key",
     term: "key（Reactの）",
-    category: "Web",
+    category: "React",
     oneLiner: "リストの各要素につける目印。id を使うのが原則。",
     description:
       "{items.map((item) => <li key={item.id}>…</li>)} の key は、React が「どれがどれか」を見分けるためのもの。並び替えや削除のときに、正しい要素を残すために使われる。配列のインデックスを key にすると、並びが変わったときに中身が入れ替わるバグの原因になる。",
@@ -1544,7 +1550,7 @@ const user: User = { name: "Aoi", age: 24 };`,
   {
     slug: "lifting-state-up",
     term: "状態を持ち上げる",
-    category: "設計",
+    category: "React",
     oneLiner: "複数の部品で共有したい状態は、共通の親に置く。",
     description:
       "2つの子コンポーネントが同じデータを見たいとき、共通の親が状態を持ち、値と更新関数を props で配る（lifting state up）。子は表示と通知に徹し、状態を持たない。「この状態は誰が持つべきか」を考えることが、React の設計そのもの。",
@@ -1554,7 +1560,7 @@ const user: User = { name: "Aoi", age: 24 };`,
   {
     slug: "nextjs",
     term: "Next.js",
-    category: "Web",
+    category: "React",
     oneLiner: "React でサイトを作るためのフレームワーク。codelog もこれで動いている。",
     description:
       "React は画面を組み立てる道具でしかないので、ページの分け方（ルーティング）、サーバー側の処理、公開の仕組みは自前になる。Next.js はそれらをまとめて提供する。app/page.jsx がトップ、app/about/page.jsx が /about——ファイル構成がそのまま URL になる。既定ではサーバー側で HTML を組み立てて返し、操作に反応する部分だけ \"use client\" と書いてブラウザ側で動かす。",
@@ -1569,6 +1575,70 @@ const user: User = { name: "Aoi", age: 24 };`,
     description:
       "/lessons/vars を開いたらどの画面を出すか、という対応を決める仕組み。Next.js ではファイルの置き場所がそのまま URL になるので、自分で対応表を書く必要がない（app/lessons/[id]/page.tsx → /lessons/なんでも）。",
     lessonIds: ["next-intro"],
+  },
+
+  // ── MODULE 09（テスト）で登場する用語 ──
+  {
+    slug: "unit-test",
+    term: "ユニットテスト",
+    category: "テスト",
+    oneLiner: "関数など小さな部品が「こう動くはず」をコードで確かめる仕組み。",
+    description:
+      "test(\"説明\", () => { expect(実際の値).toBe(期待する値) }) の形で書く。書いておけば何度でも一瞬で確かめ直せるので、機能を足したときに「別の場所を壊した」ことにすぐ気づける。壊れたら痛い場所から1本ずつ足していくのが実務的。",
+    example: `test("2 + 3 は 5", () => {
+  expect(add(2, 3)).toBe(5);
+});`,
+    lessonIds: ["test-why"],
+    aliases: ["単体テスト"],
+  },
+  {
+    slug: "expect",
+    term: "expect / アサーション",
+    category: "テスト",
+    oneLiner: "「実際の値が期待どおりか」を突き合わせる検証の1行。",
+    description:
+      "expect(実際).toBe(期待) が最小単位。toBe は同一の値か、toEqual は配列やオブジェクトの中身が同じか、toThrow はエラーが投げられるかを見る。落ちたときは「何を期待して、実際どうだったか」が表示されるので、そこがデバッグの出発点になる。",
+    lessonIds: ["test-why", "test-edge"],
+    aliases: ["toBe", "toEqual", "assertion"],
+  },
+  {
+    slug: "edge-case",
+    term: "エッジケース",
+    category: "テスト",
+    oneLiner: "端っこの入力。空・0・マイナス・想定外——バグが棲む場所。",
+    description:
+      "ふつうの入力で動くのは当たり前で、バグは端に潜む。空の配列、0での割り算、未入力、極端に大きい値。「壊れるとしたらどこか」を先に考える癖がつくと、バグは目に見えて減る。",
+    lessonIds: ["test-edge"],
+    aliases: ["境界値"],
+  },
+  {
+    slug: "tdd",
+    term: "TDD（テスト駆動開発）",
+    category: "テスト",
+    oneLiner: "先にテストを書き、落ちるのを見てから実装する進め方。",
+    description:
+      "レッド（落ちるテストを書く）→ グリーン（通す最小限を実装）→ リファクタ（動いたまま整える）のサイクル。実装より先に「完成の定義」が決まるので、迷子になりにくい。テストを設計の道具として使う考え方。",
+    lessonIds: ["test-tdd"],
+    aliases: ["テスト駆動開発"],
+  },
+  {
+    slug: "pure-function",
+    term: "純粋関数",
+    category: "設計",
+    oneLiner: "同じ入力なら必ず同じ出力を返し、外に影響を与えない関数。",
+    description:
+      "画面を書き換えたり通信したりせず、値を受け取って値を返すだけの関数。テストが一瞬で書けるうえ、読む側も安心できる。計算やルール（アプリの本質）を純粋関数に切り出し、DOM 操作や通信は外側に置くのが良い設計の型。",
+    lessonIds: ["test-design"],
+  },
+  {
+    slug: "vitest",
+    term: "Vitest",
+    category: "テスト",
+    oneLiner: "いま主流の JavaScript テストツール。codelog のテストもこれ。",
+    description:
+      "test / expect の書き味は Jest とほぼ同じで、Vite ベースで速い。npm i -D vitest jsdom で入れ、package.json に \"test\": \"vitest run\" を足せば npm test で走る。codelog 自身も、全レッスンの模範解答が本当にクリア判定されるかを Vitest で検証している。",
+    lessonIds: ["test-real"],
+    aliases: ["Jest"],
   },
 ];
 

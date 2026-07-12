@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Lightbulb, Sparkles } from "lucide-react";
+import { ArrowRight, Eye, Lightbulb, Sparkles } from "lucide-react";
 import { lessons, type Log } from "@/lib/lessons";
+import { getSolution } from "@/lib/solutions";
 import { runCode } from "@/lib/runner";
 import { runTsCode } from "@/lib/tsRunner";
 import { buildSrcDoc, compileJsx, guardCode } from "@/lib/domRunner";
@@ -40,10 +41,13 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
   const [running, setRunning] = useState(false);
   const [cleared, setCleared] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const [showSolution, setShowSolution] = useState(false);
   // DOM レッスン用: 実行のたびに +1 して iframe を作り直す。
   // srcDoc は「実行を押した瞬間のコード」で固定する（打鍵のたびに走らせない）
   const [runId, setRunId] = useState(0);
   const [srcDoc, setSrcDoc] = useState("");
+  // チューターに「いま画面がどうなっているか」を渡すための表示用 state
+  const [domHtml, setDomHtml] = useState("");
 
   // プレビューはクリックのたびに非同期でログ・画面を送ってくるため、
   // 最新値を ref で保持してクリア判定に使う（state だけだと古い値を掴む）
@@ -59,6 +63,7 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
 
   const code = codeByLesson[lessonId] ?? lesson.task?.starter ?? "";
   const checked = checksByLesson[lessonId] ?? [];
+  const solution = getSolution(lessonId);
 
   const evaluate = useCallback(() => {
     if (clearedRef.current || !lesson.task) return;
@@ -74,6 +79,7 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
     domRef.current = "";
     clearedRef.current = false;
     setOutput([]);
+    setDomHtml("");
     setCleared(false);
   };
 
@@ -173,6 +179,7 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
   const handlePreviewDom = useCallback(
     (html: string) => {
       domRef.current = html;
+      setDomHtml(html);
       evaluate();
     },
     [evaluate]
@@ -236,16 +243,46 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
           <div className="text-[15.5px] leading-relaxed text-ink">
             {lesson.task.prompt}
           </div>
-          <button
-            type="button"
-            onClick={() => setShowHint((s) => !s)}
-            className="mt-3 flex items-center gap-1.5 text-[13px] font-semibold text-accent"
-          >
-            <Lightbulb size={14} /> {showHint ? "ヒントを閉じる" : "ヒントを見る"}
-          </button>
+          <div className="mt-3 flex flex-wrap items-center gap-4">
+            <button
+              type="button"
+              onClick={() => setShowHint((s) => !s)}
+              className="flex items-center gap-1.5 text-[13px] font-semibold text-accent"
+            >
+              <Lightbulb size={14} /> {showHint ? "ヒントを閉じる" : "ヒントを見る"}
+            </button>
+            {/* 解答例は、ヒントを見てもまだ詰まっている人の最後の逃げ道。
+                先に出すと考える機会を奪うので、ヒントを開いた後にだけ出す。 */}
+            {showHint && solution && (
+              <button
+                type="button"
+                onClick={() => setShowSolution((s) => !s)}
+                className="flex items-center gap-1.5 text-[13px] font-semibold text-sub transition-colors hover:text-accent"
+              >
+                <Eye size={14} /> {showSolution ? "解答例を閉じる" : "解答例を見る"}
+              </button>
+            )}
+          </div>
           {showHint && (
             <div className="mt-2 text-[13.5px] leading-relaxed text-sub">
               {lesson.task.hint}
+            </div>
+          )}
+          {showSolution && solution && (
+            <div className="mt-3">
+              <div className="mb-1.5 text-[12px] font-bold text-sub">
+                解答例（写すより、読んでから自分で書き直すのがおすすめ）
+              </div>
+              <pre className="overflow-x-auto rounded-xl bg-editor px-4 py-3 font-mono text-[13px] leading-relaxed text-editor-ink">
+                {solution}
+              </pre>
+              <button
+                type="button"
+                onClick={() => setCodeFor(lessonId, solution)}
+                className="mt-2 text-[12.5px] font-semibold text-accent"
+              >
+                エディタに写す
+              </button>
             </div>
           )}
         </div>
@@ -293,7 +330,12 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
       )}
 
       {lesson.task && (
-        <TutorPanel lessonId={lessonId} code={code} logs={output} />
+        <TutorPanel
+          lessonId={lessonId}
+          code={code}
+          logs={output}
+          dom={lesson.preview ? domHtml : undefined}
+        />
       )}
 
       {cleared && (
