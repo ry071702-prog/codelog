@@ -1,6 +1,12 @@
 "use client";
 
+// コードエディタ。
+// textarea（実際の入力）の上に、色をつけた <pre> をぴったり重ねて
+// シンタックスハイライトを実現している（textarea の文字自体は透明にして、
+// カーソルと選択範囲だけを見せる）。両者のフォント・行間・余白は必ず揃えること。
+
 import { Play, RotateCcw } from "lucide-react";
+import { TOKEN_COLOR, tokenize } from "@/lib/highlight";
 
 interface CodeEditorProps {
   value: string;
@@ -11,6 +17,10 @@ interface CodeEditorProps {
   onReset: () => void;
   running: boolean;
 }
+
+// textarea と pre で完全に一致させる必要があるスタイル
+const TEXT_STYLE =
+  "px-[18px] py-4 font-mono text-[14.5px] leading-relaxed [tab-size:2] whitespace-pre-wrap break-words";
 
 export function CodeEditor({
   value,
@@ -57,14 +67,32 @@ export function CodeEditor({
           <RotateCcw size={13} /> リセット
         </button>
       </div>
-      <textarea
-        value={value}
-        aria-label="コードエディタ"
-        spellCheck={false}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={handleKey}
-        className="min-h-[190px] w-full resize-y border-none bg-transparent px-[18px] py-4 font-mono text-[14.5px] leading-relaxed text-editor-ink outline-none [tab-size:2]"
-      />
+
+      {/* 色つきレイヤー（pre）が高さを決め、textarea をその上に重ねる。
+          こうするとコードの行数に合わせてエディタが自然に伸びる。 */}
+      <div className="relative">
+        <pre
+          aria-hidden="true"
+          className={`min-h-[190px] ${TEXT_STYLE}`}
+        >
+          {tokenize(value).map((t, i) => (
+            <span key={i} className={TOKEN_COLOR[t.type]}>
+              {t.text}
+            </span>
+          ))}
+          {/* 末尾が改行のとき、最終行の高さを確保する */}
+          {"\n"}
+        </pre>
+        <textarea
+          value={value}
+          aria-label="コードエディタ"
+          spellCheck={false}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKey}
+          className={`absolute inset-0 h-full w-full resize-none overflow-hidden border-none bg-transparent text-transparent caret-white outline-none selection:bg-[#4b54e8]/40 ${TEXT_STYLE}`}
+        />
+      </div>
+
       <div className="flex justify-end border-t border-editor-line px-3.5 py-3">
         <button
           type="button"

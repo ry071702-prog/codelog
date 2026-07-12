@@ -202,7 +202,7 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
       {lesson.paras.map((p, i) => (
         <p
           key={i}
-          className="mb-3 text-[15.5px] leading-[1.85] text-[#3a4051]"
+          className="mb-3 text-[15.5px] leading-[1.85] text-ink/85"
         >
           <TermText text={p} />
         </p>

@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { ArrowRight, BookA, Play, Route } from "lucide-react";
+import { BookA, Play, Route } from "lucide-react";
 import { lessons } from "@/lib/lessons";
 import { glossary } from "@/lib/glossary";
+import { ResumeButton } from "@/components/ResumeButton";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function Home() {
   const moduleCount = new Set(lessons.map((l) => l.module)).size;
@@ -9,11 +11,14 @@ export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-canvas">
       <main className="mx-auto flex w-full max-w-[760px] flex-1 flex-col justify-center px-6 py-20">
-        <div className="flex items-baseline gap-1.5">
-          <span className="font-mono text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">
-            codelog
-          </span>
-          <span className="font-mono text-xl text-faint sm:text-2xl">()</span>
+        <div className="flex items-start justify-between">
+          <div className="flex items-baseline gap-1.5">
+            <span className="font-mono text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">
+              codelog
+            </span>
+            <span className="font-mono text-xl text-faint sm:text-2xl">()</span>
+          </div>
+          <ThemeToggle />
         </div>
 
         <h1 className="mt-6 text-2xl font-extrabold leading-snug tracking-tight text-ink sm:text-[32px]">
@@ -28,12 +33,7 @@ export default function Home() {
         </p>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Link
-            href={`/lessons/${lessons[0].id}`}
-            className="flex h-12 items-center justify-center gap-2 rounded-full bg-accent px-7 text-[15px] font-bold text-white transition-opacity hover:opacity-90"
-          >
-            学習を始める <ArrowRight size={17} />
-          </Link>
+          <ResumeButton />
           <Link
             href="/glossary"
             className="flex h-12 items-center justify-center gap-2 rounded-full border border-line bg-card px-7 text-[15px] font-bold text-ink transition-colors hover:border-accent hover:text-accent"

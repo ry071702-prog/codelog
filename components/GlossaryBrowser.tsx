@@ -5,6 +5,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Search } from "lucide-react";
 import {
   glossary,
@@ -16,7 +17,9 @@ import { getLesson } from "@/lib/lessons";
 type CategoryFilter = GlossaryCategory | "すべて";
 
 export function GlossaryBrowser() {
-  const [query, setQuery] = useState("");
+  // 検索パレット（Cmd+K）から /glossary?q=用語 で飛んでくる
+  const initialQuery = useSearchParams().get("q") ?? "";
+  const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState<CategoryFilter>("すべて");
 
   const q = query.trim().toLowerCase();

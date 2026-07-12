@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { JetBrains_Mono, Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
 import { ProgressProvider } from "@/components/ProgressProvider";
+import { CommandPalette } from "@/components/CommandPalette";
 
 const notoSansJP = Noto_Sans_JP({
   variable: "--font-noto-sans-jp",
@@ -61,7 +62,10 @@ export default function RootLayout({
       className={`${notoSansJP.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full">
-        <ProgressProvider>{children}</ProgressProvider>
+        <ProgressProvider>
+          {children}
+          <CommandPalette />
+        </ProgressProvider>
       </body>
     </html>
   );
