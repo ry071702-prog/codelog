@@ -14,12 +14,12 @@ export function ConsoleOutput({ logs, ran }: ConsoleOutputProps) {
       </div>
       <div className="min-h-[70px] rounded-xl bg-console px-4 py-3.5 font-mono text-sm leading-relaxed">
         {!ran && (
-          <div className="text-[#5b6178]">
+          <div className="text-[#8b93ad]">
             ▶ 「実行する」を押すと、ここに結果が出るよ
           </div>
         )}
         {ran && logs.length === 0 && (
-          <div className="text-[#5b6178]">
+          <div className="text-[#8b93ad]">
             （出力なし）console.log で何か出してみよう
           </div>
         )}
