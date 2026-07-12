@@ -75,13 +75,23 @@ export async function POST(req: Request) {
           .join("\n")
       : "(まだ実行していない、または出力なし)";
 
+  // DOM レッスンは、操作対象の HTML を知らないと的確に導けない
+  const previewSection = lesson.preview
+    ? `\n# 学習者が操作している画面の HTML（プレビューの土台）
+\`\`\`html
+${lesson.preview.html}
+\`\`\`
+このレッスンのコードは、この HTML を document 経由で操作する（プレビューで実際に動く）。
+`
+    : "";
+
   const userContent = `# いま学習中のレッスン
 モジュール: ${lesson.module}
 タイトル: ${lesson.title}
 本文: ${lesson.paras.join(" ")}
 課題: ${lesson.task.prompt}
 課題のヒント: ${lesson.task.hint}
-
+${previewSection}
 # 学習者が書いたコード
 \`\`\`js
 ${code.slice(0, 4000)}

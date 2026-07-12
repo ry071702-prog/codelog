@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Lightbulb, Sparkles } from "lucide-react";
 import { lessons, type Log } from "@/lib/lessons";
 import { runCode } from "@/lib/runner";
+import { buildSrcDoc, guardCode } from "@/lib/domRunner";
 import { useProgress } from "@/components/ProgressProvider";
 import { CodeEditor } from "@/components/CodeEditor";
 import { ConsoleOutput } from "@/components/ConsoleOutput";
+import { DomPreview } from "@/components/DomPreview";
 import { TermText } from "@/components/TermText";
 import { TutorPanel } from "@/components/TutorPanel";
 
@@ -27,6 +29,16 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
   const [running, setRunning] = useState(false);
   const [cleared, setCleared] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  // DOM レッスン用: 実行のたびに +1 して iframe を作り直す。
+  // srcDoc は「実行を押した瞬間のコード」で固定する（打鍵のたびに走らせない）
+  const [runId, setRunId] = useState(0);
+  const [srcDoc, setSrcDoc] = useState("");
+
+  // プレビューはクリックのたびに非同期でログ・画面を送ってくるため、
+  // 最新値を ref で保持してクリア判定に使う（state だけだと古い値を掴む）
+  const logsRef = useRef<Log[]>([]);
+  const domRef = useRef<string>("");
+  const clearedRef = useRef(false);
 
   // 実行結果などの state は呼び出し側の key={lessonId} で
   // レッスンごとにコンポーネントごと作り直される（リセット用 effect は不要）
@@ -36,30 +48,91 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
 
   const code = codeByLesson[lessonId] ?? lesson.task.starter;
 
-  const handleRun = async () => {
-    setRunning(true);
-    const logs = await runCode(code);
-    setOutput(logs);
-    setRan(true);
-    if (lesson.task.check(logs, code)) {
+  const evaluate = useCallback(() => {
+    if (clearedRef.current) return;
+    if (lesson.task.check(logsRef.current, code, domRef.current)) {
+      clearedRef.current = true;
       setCleared(true);
       markCompleted(lesson.id);
-    } else {
-      setCleared(false);
     }
-    setRunning(false);
+  }, [lesson, code, markCompleted]);
+
+  const resetRun = () => {
+    logsRef.current = [];
+    domRef.current = "";
+    clearedRef.current = false;
+    setOutput([]);
+    setCleared(false);
+  };
+
+  const handleRun = async () => {
+    setRunning(true);
+    resetRun();
+
+    if (!lesson.preview) {
+      const logs = await runCode(code);
+      logsRef.current = logs;
+      setOutput(logs);
+      setRan(true);
+      evaluate();
+      setRunning(false);
+      return;
+    }
+
+    // DOM レッスン: iframe で本当に実行する前に、Worker で無限ループでないか試走する
+    const safe = await guardCode(code);
+    setRan(true);
+    if (!safe) {
+      const logs: Log[] = [
+        {
+          type: "error",
+          text: "実行時間が長すぎます（無限ループかも）。プレビューは実行しませんでした。ループの終了条件を見直そう。",
+        },
+      ];
+      logsRef.current = logs;
+      setOutput(logs);
+      setRunning(false);
+      return;
+    }
+    const nextRun = runId + 1;
+    setSrcDoc(buildSrcDoc(lesson.preview, code, nextRun));
+    setRunId(nextRun); // running は iframe の done で下ろす
   };
 
   const handleReset = () => {
     setCodeFor(lessonId, lesson.task.starter);
-    setOutput([]);
+    resetRun();
     setRan(false);
-    setCleared(false);
+    setRunId(0);
+    setSrcDoc("");
   };
 
   const handleNext = () => {
     if (nextLesson) router.push(`/lessons/${nextLesson.id}`);
   };
+
+  // ── プレビューからの通知（実行後のクリックなどでも届き続ける）
+  const handlePreviewLog = useCallback(
+    (log: Log) => {
+      logsRef.current = [...logsRef.current, log];
+      setOutput(logsRef.current);
+      evaluate();
+    },
+    [evaluate]
+  );
+
+  const handlePreviewDom = useCallback(
+    (html: string) => {
+      domRef.current = html;
+      evaluate();
+    },
+    [evaluate]
+  );
+
+  const handlePreviewDone = useCallback(() => {
+    setRunning(false);
+    evaluate();
+  }, [evaluate]);
 
   return (
     <div className="mx-auto max-w-[720px]">
@@ -128,6 +201,17 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
         running={running}
       />
       <div className="h-5" />
+
+      {lesson.preview && (
+        <DomPreview
+          runId={runId}
+          srcDoc={srcDoc}
+          onLog={handlePreviewLog}
+          onDom={handlePreviewDom}
+          onDone={handlePreviewDone}
+        />
+      )}
+
       <ConsoleOutput logs={output} ran={ran} />
 
       <TutorPanel lessonId={lessonId} code={code} logs={output} />
@@ -141,7 +225,7 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
             </div>
             <div className="mt-0.5 text-sm leading-relaxed text-[#2f6b5e]">
               {isLastLesson
-                ? "全4モジュール完走、おつかれさま。変数からクラス・非同期・並列処理まで、入門書一冊ぶんの JavaScript がここに入った。次の柱はブラウザを動かす DOM 編（画面プレビューつきで追加予定）、その先に TypeScript → React。準備ができたらチャットで「次いこう」と言って。"
+                ? "全モジュール完走、おつかれさま。変数からクラス・非同期処理、そして自分の手で動く画面を作るところまで来た。次の柱は TypeScript → React / Next.js、その先に個人開発の実践。準備ができたらチャットで「次いこう」と言って。"
                 : isModuleEnd
                   ? `${lesson.module} を完了。ここから ${nextLesson.module} に入る。実務で効いてくる、一歩踏み込んだ内容。`
                   : "その調子。次のレッスンへ進もう。"}

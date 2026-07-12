@@ -10,7 +10,14 @@ export interface Task {
   prompt: string;
   starter: string;
   hint: string;
-  check: (logs: Log[], code: string) => boolean;
+  /** dom = プレビュー画面の中身（innerHTML）。DOM レッスンのときだけ渡される */
+  check: (logs: Log[], code: string, dom?: string) => boolean;
+}
+
+/** DOM レッスンでプレビューに読み込む土台。ユーザーのコードはこの HTML を操作する */
+export interface Preview {
+  html: string;
+  css?: string;
 }
 
 export interface Lesson {
@@ -21,12 +28,15 @@ export interface Lesson {
   points?: string[];
   example: string;
   task: Task;
+  /** これがあるレッスンは、Worker ではなく sandbox iframe のプレビューで実行する */
+  preview?: Preview;
 }
 
 const M1 = "MODULE 01 — 土台";
 const M2 = "MODULE 02 — 一歩深く";
 const M3 = "MODULE 03 — データを自在に";
 const M4 = "MODULE 04 — 設計とモダンJS";
+const M5 = "MODULE 05 — ブラウザとDOM";
 
 export const lessons: Lesson[] = [
   {
@@ -786,12 +796,448 @@ users.forEach((u) => {
       check: (logs, code) => logs.filter((l) => l.type === "log").length >= 4 && /Promise\.all/.test(code) && /filter/.test(code),
     },
   },
+
+  // ── MODULE 05 — ブラウザとDOM ─────────────────────────────
+  // ここからは Worker ではなく sandbox iframe のプレビューで実行する。
+  // 書いたコードで本物の画面が動き、ボタンや入力もその場で触れる。
+  {
+    id: "dom-intro", module: M5, title: "DOM — 画面をJavaScriptから触る",
+    paras: [
+      "ここまでは console.log で結果を「文字」として見てきた。ここからは本物の画面（HTML）を JavaScript から動かす。",
+      "ブラウザは読み込んだ HTML を、木のような構造のオブジェクトに変換して持っている。これが DOM（Document Object Model）。JavaScript から document を通してこの木に触ると、画面がその場で変わる。",
+      "要素を取り出すのが document.querySelector。CSS と同じ書き方で場所を指定する（#id なら id、.class ならクラス）。取り出した要素の textContent を変えれば、表示される文字が変わる。",
+    ],
+    points: [
+      "document = いま表示されているページそのもの",
+      "querySelector(\"#id\") で1つの要素を取り出す",
+      "要素.textContent = \"...\" で中の文字を書き換える",
+    ],
+    example: `// #title という id の要素を取り出す
+const title = document.querySelector("#title");
+
+// 中の文字を書き換える → 画面が変わる
+title.textContent = "書き換えた!";`,
+    preview: {
+      html: `<h1 id="title">codelog</h1>
+<p id="msg">ここを書き換えてみよう。</p>`,
+    },
+    task: {
+      prompt: "#msg の文章を、好きな一言に書き換えよう。実行するとプレビューの文字が変わる。",
+      starter: `const msg = document.querySelector("#msg");
+
+// TODO: msg のテキストを好きな一言に書き換える`,
+      hint: "msg.textContent = \"やった、画面が動いた\"; のように書く。",
+      check: (logs, code, dom) =>
+        /textContent/.test(code) && !!dom && !dom.includes("ここを書き換えてみよう"),
+    },
+  },
+  {
+    id: "dom-select", module: M5, title: "要素を選ぶ",
+    paras: [
+      "画面を触る第一歩は「どれを触るか」を指定すること。querySelector は条件に合う最初の1つ、querySelectorAll は合うもの全部を返す。",
+      "指定の書き方は CSS セレクタと同じ。#id、.class、li のようなタグ名、li.item のような組み合わせも使える。",
+      "querySelectorAll が返すのは配列によく似たリスト。length で個数がわかり、forEach で1つずつ処理できる。",
+    ],
+    points: [
+      "querySelector = 最初の1つ / querySelectorAll = 全部",
+      "見つからないと querySelector は null を返す（そのまま触るとエラー）",
+    ],
+    example: `const first = document.querySelector(".item");
+console.log(first.textContent);   // 最初の1件
+
+const all = document.querySelectorAll(".item");
+console.log(all.length);          // 個数
+
+all.forEach((el) => console.log(el.textContent));`,
+    preview: {
+      html: `<h2>くだもの</h2>
+<ul id="fruits">
+  <li class="item">りんご</li>
+  <li class="item">みかん</li>
+  <li class="item">ぶどう</li>
+</ul>`,
+    },
+    task: {
+      prompt: ".item の要素を全部取り出して、その個数を console.log で出力しよう。",
+      starter: `// TODO: .item を全部取り出して items に入れる
+const items = null;
+
+console.log(items.length);`,
+      hint: "const items = document.querySelectorAll(\".item\"); で全部取れる。",
+      check: (logs, code) =>
+        /querySelectorAll/.test(code) && logs.some((l) => l.type === "log" && /\b3\b/.test(l.text)),
+    },
+  },
+  {
+    id: "dom-text", module: M5, title: "文字を入れる — textContent と innerHTML",
+    paras: [
+      "要素の中身を変える方法は2つある。textContent は「ただの文字」として入れる。innerHTML は「HTML として解釈して」入れる。",
+      "innerHTML はタグを書けて便利に見えるが、ユーザーが入力した文字をそのまま innerHTML に入れると、悪意あるタグまで実行されてしまう（XSS という代表的な攻撃）。",
+      "だから原則は textContent。タグを組み立てたいときは、次のレッスンでやる createElement を使う。これは実務でも同じ判断基準になる。",
+    ],
+    points: [
+      "基本は textContent（安全）",
+      "innerHTML は自分で書いた固定の HTML にだけ使う",
+      "外から来た文字（入力・APIの中身）を innerHTML に入れない",
+    ],
+    example: `const box = document.querySelector("#box");
+
+box.textContent = "<b>太字にはならない</b>";  // 文字としてそのまま出る
+
+// box.innerHTML = "<b>太字になる</b>";      // HTML として解釈される`,
+    preview: {
+      html: `<div id="box" class="card">まだ何もない</div>`,
+    },
+    task: {
+      prompt: "#box の中身を、textContent を使って自分の名前や好きな言葉に変えよう。",
+      starter: `const box = document.querySelector("#box");
+
+// TODO: textContent で中身を書き換える`,
+      hint: "box.textContent = \"りーたん\"; のように書く。",
+      check: (logs, code, dom) =>
+        /textContent/.test(code) && !!dom && !dom.includes("まだ何もない"),
+    },
+  },
+  {
+    id: "dom-style", module: M5, title: "見た目を変える — classList",
+    paras: [
+      "見た目を変えるやり方も2つある。要素.style.color = \"red\" のように直接指定する方法と、CSS で用意しておいたクラスを付け外しする方法。",
+      "実務で主流なのは後者。見た目のルールは CSS に置いておき、JavaScript は「このクラスを付ける/外す」だけを担当する。役割が分かれて読みやすく、変更にも強い。",
+      "classList.add で付ける、remove で外す、toggle で「付いてたら外す・なければ付ける」。",
+    ],
+    points: [
+      "classList.add / remove / toggle / contains",
+      "style で直接いじるのは、色や位置を動的に計算するときだけ",
+    ],
+    example: `const card = document.querySelector("#card");
+
+card.classList.add("highlight");     // クラスを付ける（黄色くなる）
+// card.classList.remove("highlight");
+// card.classList.toggle("highlight");   // 付いてたら外す
+
+console.log(card.classList.contains("highlight"));  // true`,
+    preview: {
+      html: `<div id="card" class="card">このカードを目立たせよう</div>`,
+    },
+    task: {
+      prompt: "#card に highlight クラスを付けて、カードを目立たせよう（highlight は CSS に用意済み）。",
+      starter: `const card = document.querySelector("#card");
+
+// TODO: highlight クラスを付ける`,
+      hint: "card.classList.add(\"highlight\");",
+      check: (logs, code, dom) =>
+        /classList/.test(code) && !!dom && /highlight/.test(dom),
+    },
+  },
+  {
+    id: "dom-create", module: M5, title: "要素を作って足す",
+    paras: [
+      "画面に新しいものを増やすには、要素を作って、どこかにぶら下げる。document.createElement で作り、appendChild で親の中に入れる。",
+      "作っただけでは画面に出ない。appendChild で DOM の木につないだ瞬間に表示される。「作る」と「つなぐ」は別の操作だと覚えよう。",
+      "消すときは 要素.remove()。",
+    ],
+    points: [
+      "createElement(\"li\") で要素を作る",
+      "親.appendChild(子) で木につなぐ → 表示される",
+      "要素.remove() で消える",
+    ],
+    example: `const list = document.querySelector("#list");
+
+const li = document.createElement("li");   // 作る
+li.textContent = "1つ目";                   // 中身を入れる
+list.appendChild(li);                       // つなぐ → 画面に出る`,
+    preview: {
+      html: `<h2>やることリスト</h2>
+<ul id="list"></ul>`,
+    },
+    task: {
+      prompt: "li を3つ作って #list に足そう（同じ手順を3回でもOK）。",
+      starter: `const list = document.querySelector("#list");
+
+const li = document.createElement("li");
+li.textContent = "1つ目";
+list.appendChild(li);
+
+// TODO: 同じ要領で、あと2つ足す`,
+      hint: "createElement → textContent → appendChild の3行を、もう2回書けばいい。",
+      check: (logs, code, dom) =>
+        /createElement/.test(code) && !!dom && (dom.match(/<li/g) ?? []).length >= 3,
+    },
+  },
+  {
+    id: "dom-list", module: M5, title: "配列から一覧を描く",
+    paras: [
+      "同じ形の要素を手で3回書くのは無駄だった。データが配列であるなら、forEach で回して要素を作ればいい。",
+      "「データ（配列）があって、それを画面（DOM）に変換する」——この形はアプリの中心にある考え方。React も Next.js も、突き詰めればこれを自動化する仕組み。",
+      "MODULE 03 で覚えた配列メソッドが、そのまま画面づくりに効いてくる。",
+    ],
+    points: [
+      "データ → 画面 の変換を1か所にまとめると、あとで直しやすい",
+      "件数が増えてもコードは増えない（配列を変えるだけ）",
+    ],
+    example: `const names = ["Aoi", "Ken", "Mei"];
+const list = document.querySelector("#list");
+
+names.forEach((name) => {
+  const li = document.createElement("li");
+  li.textContent = name;
+  list.appendChild(li);
+});`,
+    preview: {
+      html: `<h2>今日のやること</h2>
+<ul id="list"></ul>`,
+    },
+    task: {
+      prompt: "配列 tasks の中身を、li として全部 #list に並べよう。",
+      starter: `const tasks = ["朝ラン", "買い物", "読書"];
+const list = document.querySelector("#list");
+
+tasks.forEach((task) => {
+  // TODO: task を li にして list に足す
+});`,
+      hint: "例のコードとほぼ同じ。createElement(\"li\") → textContent = task → appendChild(li)。",
+      check: (logs, code, dom) =>
+        /(forEach|map)/.test(code) && !!dom && (dom.match(/<li/g) ?? []).length >= 3,
+    },
+  },
+  {
+    id: "dom-event", module: M5, title: "イベント — 操作に反応する",
+    paras: [
+      "ここまでのコードは「上から順に1回だけ」動いていた。アプリらしくなるのはここから——ユーザーが操作したときに動くコードを登録できる。",
+      "addEventListener(\"click\", 関数) は「クリックされたら、この関数を実行して」という予約。予約した関数（イベントハンドラ）は、押されるまで待っていて、押されるたびに何度でも走る。",
+      "click のほかに input（入力されるたび）、submit（フォーム送信）、keydown（キーが押された）などがある。",
+    ],
+    points: [
+      "addEventListener(\"click\", () => { ... }) で予約する",
+      "登録した関数は、押されるまで実行されない",
+      "実行したあと、プレビューのボタンを実際に押してみよう",
+    ],
+    example: `const btn = document.querySelector("#btn");
+
+btn.addEventListener("click", () => {
+  console.log("押された!");
+});`,
+    preview: {
+      html: `<button id="btn">押す</button>
+<p>押した回数: <span id="count">0</span></p>`,
+    },
+    task: {
+      prompt: "ボタンを押すたびに #count の数字が1ずつ増えるようにしよう。実行したら、プレビューのボタンを実際に押すとクリア。",
+      starter: `const btn = document.querySelector("#btn");
+const countEl = document.querySelector("#count");
+let count = 0;
+
+btn.addEventListener("click", () => {
+  // TODO: count を1増やして、countEl に表示する
+});`,
+      hint: "count = count + 1; のあと countEl.textContent = count; を書く。",
+      check: (logs, code, dom) =>
+        /addEventListener/.test(code) && !!dom && /id="count">\s*[1-9]/.test(dom),
+    },
+  },
+  {
+    id: "dom-input", module: M5, title: "入力を受け取る",
+    paras: [
+      "入力欄の中身は 要素.value で読める（textContent ではないので注意）。ボタンが押された瞬間に value を読めば、そのときの入力内容が手に入る。",
+      "value はいつでも「今の中身」を返す。だから読むタイミングが重要になる——先に読んでしまうと空のままだ。",
+      "読んだ値は文字列。数値として計算したいときは Number(value) で変換する。",
+    ],
+    points: [
+      "入力欄は .value（.textContent では取れない）",
+      "value はいつも文字列。数値にするなら Number()",
+      "空のときの処理（if で弾く）も忘れずに",
+    ],
+    example: `const input = document.querySelector("#name");
+const btn = document.querySelector("#go");
+
+btn.addEventListener("click", () => {
+  const name = input.value;        // 押された「その時」の中身
+  console.log(name);
+});`,
+    preview: {
+      html: `<input id="name" placeholder="名前を入力" />
+<button id="go">あいさつ</button>
+<p id="hello"></p>`,
+    },
+    task: {
+      prompt: "入力した名前を使って、#hello に「こんにちは、◯◯さん」と表示しよう。実行したら、実際に入力して押してみて。",
+      starter: `const input = document.querySelector("#name");
+const btn = document.querySelector("#go");
+const hello = document.querySelector("#hello");
+
+btn.addEventListener("click", () => {
+  const name = input.value;
+  // TODO: hello に「こんにちは、◯◯さん」と表示する
+});`,
+      hint: "テンプレートリテラルが使える: hello.textContent = \`こんにちは、\${name}さん\`;",
+      check: (logs, code, dom) =>
+        /\.value/.test(code) && /addEventListener/.test(code) && !!dom && /id="hello">\s*\S/.test(dom),
+    },
+  },
+  {
+    id: "dom-state", module: M5, title: "状態と再描画 — アプリの心臓",
+    paras: [
+      "ボタンが増え、表示する場所が増えると、「あちこちの textContent を直接いじる」書き方はすぐ破綻する。どこが今どうなっているのか、追えなくなるからだ。",
+      "解決策はシンプル。今の状態（state）を変数に持ち、画面を描く仕事は render 関数1つに集約する。操作で変えるのは state だけ。変えたら render を呼び直す。",
+      "state → render → 画面。この一方通行こそ React の考え方そのもので、ここを掴んでおくと React が「なぜそう書くのか」がすんなり入る。",
+    ],
+    points: [
+      "状態を持つ変数はひとつ（ここでは count）",
+      "画面を触るのは render の中だけ",
+      "イベントは「state を変えて render を呼ぶ」だけ",
+    ],
+    example: `let count = 0;
+const view = document.querySelector("#view");
+
+function render() {          // 画面を描く仕事はここだけ
+  view.textContent = count;
+}
+
+document.querySelector("#plus").addEventListener("click", () => {
+  count = count + 1;         // state を変える
+  render();                  // 描き直す
+});
+
+render();                    // 最初の1回`,
+    preview: {
+      html: `<button id="plus">+1</button>
+<button id="minus">-1</button>
+<p>カウント: <span id="view">0</span></p>`,
+    },
+    task: {
+      prompt: "-1 ボタンを完成させよう（render は使い回す）。実行したらボタンを押して数字を動かすとクリア。",
+      starter: `let count = 0;
+const view = document.querySelector("#view");
+
+function render() {
+  view.textContent = count;
+}
+
+document.querySelector("#plus").addEventListener("click", () => {
+  count = count + 1;
+  render();
+});
+
+// TODO: #minus のクリックで count を1減らして render を呼ぶ
+
+render();`,
+      hint: "+1 のブロックをコピーして、#minus にし、count = count - 1; にする。",
+      check: (logs, code, dom) =>
+        /render/.test(code) && /addEventListener/.test(code) && !!dom && /id="view">\s*-?[1-9]/.test(dom),
+    },
+  },
+  {
+    id: "dom-fetch", module: M5, title: "データを取ってきて描く",
+    paras: [
+      "MODULE 04 の非同期処理と、この章の DOM がここで合流する。実在のアプリの基本形は「データを取ってくる → 画面に描く」だ。",
+      "取得は時間がかかるので await で待つ。待っている間は「読み込み中…」と出し、届いたら一覧に描き替える。この気配りがあるだけで、ぐっとアプリらしくなる。",
+      "fetchUsers は codelog が用意した擬似APIで、0.25秒後にユーザー一覧を返す。本物の API 通信も、書き方はほとんど同じ。",
+    ],
+    points: [
+      "イベントハンドラを async にすれば、その中で await が使える",
+      "描き直す前に一度空にする（list.textContent = \"\"）",
+      "取得中の表示を出すとユーザーが迷わない",
+    ],
+    example: `const list = document.querySelector("#users");
+
+async function load() {
+  list.textContent = "読み込み中…";
+  const users = await fetchUsers();     // 0.25秒待つ
+  list.textContent = "";                // いったん空に
+
+  users.forEach((u) => {
+    const li = document.createElement("li");
+    li.textContent = u.name;
+    list.appendChild(li);
+  });
+}`,
+    preview: {
+      html: `<button id="load">ユーザーを読み込む</button>
+<ul id="users"></ul>`,
+    },
+    task: {
+      prompt: "ボタンを押したら fetchUsers() でユーザーを取得し、「名前（年齢歳）」の形で li に並べよう。",
+      starter: `const btn = document.querySelector("#load");
+const list = document.querySelector("#users");
+
+btn.addEventListener("click", async () => {
+  list.textContent = "読み込み中…";
+  const users = await fetchUsers();
+  list.textContent = "";
+
+  // TODO: users を1人ずつ li にして list に足す（名前と年齢を出す）
+});`,
+      hint: "users.forEach((u) => { ... }) の中で createElement。文字は \`\${u.name}（\${u.age}歳）\` のように組み立てられる。",
+      check: (logs, code, dom) =>
+        /fetchUsers/.test(code) && !!dom && (dom.match(/<li/g) ?? []).length >= 3,
+    },
+  },
+  {
+    id: "dom-todo", module: M5, title: "ミニ演習 — TODOアプリを作る",
+    paras: [
+      "この章の総仕上げ。入力・イベント・要素作成・状態・再描画——全部を1つに束ねて、本当に動く TODO アプリを作る。",
+      "設計は前のレッスンと同じ形にしてある。データは配列 todos、画面を描くのは render 関数だけ。追加ボタンは「配列に足して render を呼ぶ」しかしない。",
+      "この形のまま React に移せば、そのまま React の TODO アプリになる。ここまで来れば、個人開発の入り口に立っている。",
+    ],
+    points: [
+      "TODO は2か所（追加の処理と、削除ボタンの処理）",
+      "詰まったら dom-state と dom-create に戻る。戻るのは設計通り",
+    ],
+    example: `// 「配列に足して描き直す」——それだけ
+const todos = [];
+
+function render() {
+  list.textContent = "";                  // いったん空に
+  todos.forEach((text) => {
+    const li = document.createElement("li");
+    li.textContent = text;
+    list.appendChild(li);
+  });
+}`,
+    preview: {
+      html: `<h2>TODO</h2>
+<input id="text" placeholder="やることを入力" />
+<button id="add">追加</button>
+<ul id="list"></ul>`,
+    },
+    task: {
+      prompt: "入力した文字を TODO として追加できるようにしよう（余力があれば、各行に「削除」ボタンも付けてみて）。",
+      starter: `const todos = [];
+const input = document.querySelector("#text");
+const list = document.querySelector("#list");
+
+function render() {
+  list.textContent = "";
+  todos.forEach((text, i) => {
+    const li = document.createElement("li");
+    li.textContent = text;
+
+    // 余力があれば: 削除ボタンを作って li に足す
+    // 押されたら todos から i 番目を取り除いて render()
+
+    list.appendChild(li);
+  });
+}
+
+document.querySelector("#add").addEventListener("click", () => {
+  const text = input.value;
+  if (text === "") return;      // 空なら何もしない
+
+  // TODO: todos に text を足して、入力欄を空にして、render を呼ぶ
+});
+
+render();`,
+      hint: "todos.push(text); input.value = \"\"; render(); の3行。削除は todos.splice(i, 1); のあと render()。",
+      check: (logs, code, dom) =>
+        /createElement/.test(code) && /addEventListener/.test(code) && !!dom && (dom.match(/<li/g) ?? []).length >= 1,
+    },
+  },
 ];
 
 export const roadmap = [
-  "Module 05 — ブラウザとDOM（プレビュー実行を追加予定）",
   "Module 06 — TypeScript",
   "Module 07 — React / Next.js",
+  "Module 08 — 個人開発の実践",
 ];
 
 export function getLesson(id: string): Lesson | undefined {

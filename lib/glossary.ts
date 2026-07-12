@@ -271,7 +271,8 @@ console.log(name, age);`,
     example: `const updated = { ...user, age: 29 };  // コピーして一部変更
 const merged = [...a, ...b];           // 配列の結合`,
     lessonIds: ["destr"],
-    aliases: ["スプレッド", "..."],
+    // "..." は本文中の「省略」の意味でも出てくるので別名にしない（誤リンクを防ぐ）
+    aliases: ["スプレッド"],
   },
   {
     slug: "exception",
@@ -1055,7 +1056,8 @@ expect(multiply(4, 5)).toBe(20);`,
     oneLiner: "他の人が書いたコードを読んで、問題や改善点を指摘し合うこと。",
     description:
       "主にプルリクエスト上で行われる。バグの早期発見だけでなく、知識共有や書き方を揃える目的もある。指摘は人格でなくコードへのコメント、が大事な文化。LGTM（Looks Good To Me）=「良いと思います、承認」の定番略語。",
-    aliases: ["レビュー", "LGTM"],
+    // "レビュー" は「プレビュー」の一部にも一致してしまうため別名にしない
+    aliases: ["LGTM"],
   },
   {
     slug: "linter",
@@ -1169,6 +1171,192 @@ expect(multiply(4, 5)).toBe(20);`,
     description:
       "「1分間に◯回まで」「1日◯トークンまで」のような利用上限。AI API に限らず Web API 全般にあり、超えると 429 エラー（Too Many Requests）が返る。アプリ側では回数を数えて制限したり、時間を置いて再試行（リトライ）したりして付き合う。",
     aliases: ["rate limit", "429"],
+  },
+
+  // ── MODULE 05（ブラウザとDOM）で登場する用語 ──
+  {
+    slug: "html",
+    term: "HTML",
+    category: "Web",
+    oneLiner: "Webページの「構造」を書く言語。見出し・段落・ボタンなどの部品を並べる。",
+    description:
+      "HyperText Markup Language。<h1>見出し</h1> のようにタグで囲んで、その部分が何なのか（見出し・段落・リスト・ボタン）を示す。見た目は CSS、動きは JavaScript が担当し、HTML は骨組みを受け持つ。ブラウザは読み込んだ HTML を DOM という木構造に変換して保持する。",
+    lessonIds: ["dom-intro"],
+  },
+  {
+    slug: "css",
+    term: "CSS",
+    category: "Web",
+    oneLiner: "Webページの「見た目」を指定する言語。色・大きさ・余白・配置など。",
+    description:
+      "Cascading Style Sheets。「.card は角丸で影をつける」のようにルールを書いておき、HTML の要素に適用する。JavaScript から見た目を変えるときも、style を直接いじるより、CSS で用意したクラスを classList で付け外しするのが主流。",
+    lessonIds: ["dom-style"],
+  },
+  {
+    slug: "css-selector",
+    term: "CSSセレクタ",
+    category: "Web",
+    oneLiner: "「どの要素か」を指定する書き方。#id、.class、タグ名など。",
+    description:
+      "CSS でも JavaScript（querySelector）でも同じ書き方で要素を指定できる。#title は id が title の要素、.item はクラスが item の要素、li は li タグ全部、li.item は「li かつ item クラス」を指す。",
+    example: `document.querySelector("#title");    // id
+document.querySelectorAll(".item");   // class を全部`,
+    lessonIds: ["dom-select"],
+    aliases: ["セレクタ"],
+  },
+  {
+    slug: "element",
+    term: "要素",
+    reading: "ようそ",
+    category: "Web",
+    oneLiner: "HTML のタグ1つ分。DOM ではオブジェクトとして扱える。",
+    description:
+      "<p>こんにちは</p> のようなタグ1つ分が要素（element）。JavaScript から取り出すと、textContent（中の文字）、classList（クラス）、value（入力欄の中身）などのプロパティを持つオブジェクトとして扱える。要素の中に要素が入る入れ子構造が、DOM という木を作る。",
+    lessonIds: ["dom-intro", "dom-select"],
+    aliases: ["element", "エレメント"],
+  },
+  {
+    slug: "query-selector",
+    term: "querySelector",
+    category: "Web",
+    oneLiner: "画面から要素を取り出す関数。CSSセレクタで場所を指定する。",
+    description:
+      "document.querySelector(\"#id\") は条件に合う最初の1つを返し、document.querySelectorAll(\".class\") は合うもの全部をリストで返す。見つからないときは querySelector が null を返すので、そのまま .textContent などを触るとエラーになる。",
+    example: `const title = document.querySelector("#title");
+const items = document.querySelectorAll(".item");
+console.log(items.length);`,
+    lessonIds: ["dom-intro", "dom-select"],
+    aliases: ["querySelectorAll"],
+  },
+  {
+    slug: "text-content",
+    term: "textContent",
+    category: "Web",
+    oneLiner: "要素の中の「文字」を読み書きするプロパティ。タグは解釈されない。",
+    description:
+      "要素.textContent = \"文字\" と代入すると、その要素の中身が置き換わって画面が変わる。タグを書いても文字としてそのまま表示されるため、innerHTML より安全。外から来た文字（ユーザー入力や API の中身）を画面に出すときは、原則こちらを使う。",
+    lessonIds: ["dom-intro", "dom-text"],
+  },
+  {
+    slug: "inner-html",
+    term: "innerHTML",
+    category: "Web",
+    oneLiner: "要素の中身を HTML として読み書きするプロパティ。使いどころに注意。",
+    description:
+      "代入した文字列は HTML として解釈されるので、タグを書けば本物のタグになる。便利な反面、ユーザーが入力した文字をそのまま入れると悪意あるスクリプトまで動いてしまう（XSS）。使うのは自分で書いた固定の HTML だけにして、動的なものは textContent か createElement で組み立てる。",
+    lessonIds: ["dom-text"],
+  },
+  {
+    slug: "xss",
+    term: "XSS",
+    category: "Web",
+    oneLiner: "他人の入力に混ぜられたスクリプトが実行されてしまう、代表的な攻撃。",
+    description:
+      "Cross-Site Scripting。ユーザーの入力を innerHTML などで無検査に画面へ埋め込むと、仕込まれたタグやスクリプトが実行され、Cookie を盗まれるなどの被害につながる。対策の基本は、外から来た文字を HTML として解釈させないこと（textContent を使う、フレームワークの自動エスケープに任せる）。",
+    lessonIds: ["dom-text"],
+    aliases: ["クロスサイトスクリプティング"],
+  },
+  {
+    slug: "create-element",
+    term: "createElement",
+    category: "Web",
+    oneLiner: "新しい要素を作る関数。作っただけでは画面に出ない。",
+    description:
+      "document.createElement(\"li\") で要素を作り、textContent などで中身を整え、親要素の appendChild でつないで初めて画面に現れる。「作る」と「つなぐ」が別の操作である点が最初のつまずきどころ。",
+    example: `const li = document.createElement("li");
+li.textContent = "1つ目";
+list.appendChild(li);   // ここで画面に出る`,
+    lessonIds: ["dom-create"],
+  },
+  {
+    slug: "append-child",
+    term: "appendChild",
+    category: "Web",
+    oneLiner: "要素を親の中に追加して、DOM の木につなぐ。",
+    description:
+      "親.appendChild(子) で、子要素が親の末尾に追加され、画面に表示される。逆に消したいときは 要素.remove()。一覧を描き直すときは、親の textContent を空文字にしてから作り直すのが単純で確実。",
+    lessonIds: ["dom-create", "dom-list"],
+    aliases: ["remove()"],
+  },
+  {
+    slug: "class-list",
+    term: "classList",
+    category: "Web",
+    oneLiner: "要素のクラスを付け外しする道具。見た目の切り替えはこれが主流。",
+    description:
+      "classList.add(\"highlight\") で付け、remove で外し、toggle で「あれば外す・なければ付ける」、contains で有無を調べる。見た目のルールは CSS に置き、JavaScript は付け外しだけを担当する——この分担が読みやすく、変更にも強い。",
+    lessonIds: ["dom-style"],
+  },
+  {
+    slug: "event",
+    term: "イベント",
+    category: "Web",
+    oneLiner: "クリック・入力・送信など、画面で起きたできごと。",
+    description:
+      "ボタンが押された（click）、文字が入力された（input）、フォームが送信された（submit）、キーが押された（keydown）などがイベント。イベントが起きたときに動く関数を登録しておくのが addEventListener で、これがアプリを「操作に反応するもの」にする。",
+    lessonIds: ["dom-event"],
+    aliases: ["event"],
+  },
+  {
+    slug: "add-event-listener",
+    term: "addEventListener",
+    category: "Web",
+    oneLiner: "「◯◯されたら、この関数を動かして」という予約。",
+    description:
+      "要素.addEventListener(\"click\", () => { ... }) と書くと、その要素が押されるたびに関数が実行される。登録した時点では動かず、操作されるまで待っている点がポイント。渡す関数はイベントハンドラと呼ばれる。",
+    example: `btn.addEventListener("click", () => {
+  console.log("押された!");
+});`,
+    lessonIds: ["dom-event", "dom-input"],
+    aliases: ["イベントハンドラ", "イベントリスナー"],
+  },
+  {
+    slug: "input-value",
+    term: "value（入力値）",
+    category: "Web",
+    oneLiner: "入力欄の「今の中身」。textContent では取れない。",
+    description:
+      "input や textarea の中身は 要素.value で読み書きする。読むタイミングが重要で、ボタンが押された瞬間に読めばそのときの入力内容が手に入る。返るのは常に文字列なので、数値として計算したいときは Number() で変換する。",
+    lessonIds: ["dom-input"],
+  },
+  {
+    slug: "state",
+    term: "状態（state）",
+    category: "設計",
+    oneLiner: "アプリが「今どうなっているか」を持つデータ。画面はここから描く。",
+    description:
+      "カウントの数、TODO の配列、ログイン中かどうか——こうした変わりうるデータが状態。画面のあちこちを直接書き換えるのではなく、状態を1か所に持ち、それを元に画面を描き直す（render）設計にすると、追いやすく壊れにくい。React はこの考え方を仕組みとして提供している。",
+    lessonIds: ["dom-state", "dom-todo"],
+    aliases: ["state"],
+  },
+  {
+    slug: "render",
+    term: "レンダリング（描画）",
+    category: "Web",
+    oneLiner: "データを元に画面を描くこと。描き直すことを再描画という。",
+    description:
+      "「状態 → 画面」の変換をする処理。自前の DOM 操作では render() のような関数に画面を触る仕事を集約する。React などのフレームワークは、状態が変わったら必要な部分だけ自動で再描画してくれる——手で書いていたこの流れを、機械がやってくれるということ。",
+    lessonIds: ["dom-state"],
+    aliases: ["render", "再描画", "描画"],
+  },
+  {
+    slug: "iframe",
+    term: "iframe",
+    category: "Web",
+    oneLiner: "ページの中に別のページを埋め込む枠。codelog のプレビューもこれ。",
+    description:
+      "<iframe> で囲まれた領域は、独立した小さなページとして動く。codelog の DOM レッスンのプレビューは sandbox 属性つきの iframe で、書いたコードはその中だけで動く。だから codelog 本体の画面や保存データには一切触れられない。",
+    lessonIds: ["dom-intro"],
+  },
+  {
+    slug: "sandbox",
+    term: "サンドボックス",
+    category: "Web",
+    oneLiner: "外に影響を出せないよう隔離した実行場所。「砂場」の意味。",
+    description:
+      "信頼できないコードを、被害が出ない囲いの中で動かす考え方。codelog では Web Worker（別スレッド）と sandbox iframe（隔離されたページ）の2種類を使い分けて、学習者が書いたコードを安全に実行している。無限ループを書いてもサイトが壊れないのはこのため。",
+    lessonIds: ["dom-intro"],
+    aliases: ["sandbox"],
   },
 ];
 
