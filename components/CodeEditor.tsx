@@ -54,7 +54,7 @@ export function CodeEditor({
           <span className="h-[11px] w-[11px] rounded-full bg-[#ff5f57]" />
           <span className="h-[11px] w-[11px] rounded-full bg-[#febc2e]" />
           <span className="h-[11px] w-[11px] rounded-full bg-[#28c840]" />
-          <span className="ml-2 font-mono text-xs text-[#6b7392]">
+          <span className="ml-2 font-mono text-xs text-[#98a0bd]">
             {fileName}
           </span>
         </div>
@@ -62,7 +62,7 @@ export function CodeEditor({
           type="button"
           onClick={onReset}
           title="最初のコードに戻す"
-          className="flex items-center gap-1.5 text-xs text-[#6b7392] transition-colors hover:text-editor-ink"
+          className="flex items-center gap-1.5 text-xs text-[#98a0bd] transition-colors hover:text-editor-ink"
         >
           <RotateCcw size={13} /> リセット
         </button>
