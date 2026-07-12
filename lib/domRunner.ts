@@ -10,6 +10,8 @@
 import type { Preview } from "@/lib/lessons";
 
 const GUARD_TIMEOUT_MS = 3000;
+// 初回は TypeScript コンパイラ（8MB）の読み込みがあるので長めに待つ
+const COMPILE_TIMEOUT_MS = 30000;
 
 /** プレビューから親ページへ送られるメッセージ */
 export interface PreviewMessage {
@@ -73,6 +75,48 @@ const BASE_CSS = `
 `;
 
 /**
+ * JSX を JavaScript に変換する（MODULE 07）。
+ * 変換には Worker の中で本物の TypeScript コンパイラを使う。
+ */
+export function compileJsx(
+  code: string
+): Promise<{ js: string | null; errors: string[] }> {
+  return new Promise((resolve) => {
+    const worker = new Worker("/worker/jsx-compiler.js");
+    const timer = setTimeout(() => {
+      worker.terminate();
+      resolve({
+        js: null,
+        errors: ["React の準備に時間がかかっています。もう一度実行してみて。"],
+      });
+    }, COMPILE_TIMEOUT_MS);
+
+    const finish = (result: { js: string | null; errors: string[] }) => {
+      clearTimeout(timer);
+      worker.terminate();
+      resolve(result);
+    };
+
+    worker.onmessage = (e: MessageEvent<CompilerMessage>) => {
+      const msg = e.data;
+      if (msg.type === "compiled") finish({ js: msg.js ?? "", errors: [] });
+      else if (msg.type === "syntax-error") finish({ js: null, errors: msg.errors ?? [] });
+      else finish({ js: null, errors: [msg.text ?? "変換に失敗しました"] });
+    };
+    worker.onerror = (e) => finish({ js: null, errors: [e.message || "変換に失敗しました"] });
+
+    worker.postMessage({ code });
+  });
+}
+
+interface CompilerMessage {
+  type: "compiled" | "syntax-error" | "error";
+  js?: string;
+  errors?: string[];
+  text?: string;
+}
+
+/**
  * ユーザーのコードを <script> の中に安全に埋め込む。
  * JSON 文字列にしたうえで < をエスケープし、コード中に "</script>" と書かれても
  * スクリプトタグが途中で閉じてしまわないようにする。
@@ -81,8 +125,27 @@ function embed(code: string): string {
   return JSON.stringify(code).replace(/</g, "\\u003c");
 }
 
-/** プレビュー iframe に読み込む HTML を組み立てる */
-export function buildSrcDoc(preview: Preview, code: string, runId: number): string {
+/**
+ * プレビュー iframe に読み込む HTML を組み立てる。
+ * react: true のときは React / ReactDOM を読み込み、useState などを直接使えるようにする
+ * （渡される code は JSX 変換済みの JavaScript）。
+ */
+export function buildSrcDoc(
+  preview: Preview,
+  code: string,
+  runId: number,
+  options: { react?: boolean } = {}
+): string {
+  const reactTag = options.react
+    ? '<script src="/vendor/react/react.js"></script>'
+    : "";
+  const reactArgs = options.react
+    ? '"React", "ReactDOM", "useState", "useEffect", "useRef", '
+    : "";
+  const reactValues = options.react
+    ? "React, ReactDOM, React.useState, React.useEffect, React.useRef, "
+    : "";
+
   return `<!doctype html>
 <html lang="ja">
 <head>
@@ -91,6 +154,7 @@ export function buildSrcDoc(preview: Preview, code: string, runId: number): stri
 </head>
 <body>
 <div id="app">${preview.html}</div>
+${reactTag}
 <script>
 (function () {
   var RUN_ID = ${runId};
@@ -156,8 +220,8 @@ export function buildSrcDoc(preview: Preview, code: string, runId: number): stri
   var code = ${embed(code)};
   (async function () {
     try {
-      var fn = new Function("console", "fetchUsers", "fetchPosts", "return (async () => {\\n" + code + "\\n})();");
-      await fn(sandboxConsole, fetchUsers, fetchPosts);
+      var fn = new Function("console", "fetchUsers", "fetchPosts", ${reactArgs}"return (async () => {\\n" + code + "\\n})();");
+      await fn(sandboxConsole, fetchUsers, fetchPosts, ${reactValues}undefined);
     } catch (err) {
       send("error", { text: String(err && err.message ? err.message : err) });
     }

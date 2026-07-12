@@ -6,7 +6,7 @@ import { ArrowRight, Lightbulb, Sparkles } from "lucide-react";
 import { lessons, type Log } from "@/lib/lessons";
 import { runCode } from "@/lib/runner";
 import { runTsCode } from "@/lib/tsRunner";
-import { buildSrcDoc, guardCode } from "@/lib/domRunner";
+import { buildSrcDoc, compileJsx, guardCode } from "@/lib/domRunner";
 import { useProgress } from "@/components/ProgressProvider";
 import { CodeEditor } from "@/components/CodeEditor";
 import { ConsoleOutput } from "@/components/ConsoleOutput";
@@ -82,8 +82,27 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
       return;
     }
 
-    // DOM レッスン: iframe で本当に実行する前に、Worker で無限ループでないか試走する
-    const safe = await guardCode(code);
+    // React レッスンは、ブラウザが読める JavaScript に JSX を変換してから実行する
+    const isReact = lesson.lang === "jsx";
+    let runnable = code;
+    if (isReact) {
+      const { js, errors } = await compileJsx(code);
+      if (js === null) {
+        const logs: Log[] = errors.map((text) => ({
+          type: "error" as const,
+          text,
+        }));
+        logsRef.current = logs;
+        setOutput(logs);
+        setRan(true);
+        setRunning(false);
+        return;
+      }
+      runnable = js;
+    }
+
+    // iframe で本当に実行する前に、Worker で無限ループでないか試走する
+    const safe = await guardCode(runnable);
     setRan(true);
     if (!safe) {
       const logs: Log[] = [
@@ -98,7 +117,9 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
       return;
     }
     const nextRun = runId + 1;
-    setSrcDoc(buildSrcDoc(lesson.preview, code, nextRun));
+    setSrcDoc(
+      buildSrcDoc(lesson.preview, runnable, nextRun, { react: isReact })
+    );
     setRunId(nextRun); // running は iframe の done で下ろす
   };
 
@@ -198,7 +219,13 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
 
       <CodeEditor
         value={code}
-        fileName={lesson.lang === "ts" ? "script.ts" : "script.js"}
+        fileName={
+          lesson.lang === "ts"
+            ? "script.ts"
+            : lesson.lang === "jsx"
+              ? "App.jsx"
+              : "script.js"
+        }
         onChange={(v) => setCodeFor(lessonId, v)}
         onRun={handleRun}
         onReset={handleReset}

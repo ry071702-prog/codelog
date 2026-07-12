@@ -30,8 +30,12 @@ export interface Lesson {
   task: Task;
   /** これがあるレッスンは、Worker ではなく sandbox iframe のプレビューで実行する */
   preview?: Preview;
-  /** "ts" のレッスンは、実行前に本物の tsc で型チェックする（既定は "js"） */
-  lang?: "js" | "ts";
+  /**
+   * "ts"  … 実行前に本物の tsc で型チェックする
+   * "jsx" … JSX を JavaScript に変換し、React つきのプレビューで実行する
+   * 既定は "js"
+   */
+  lang?: "js" | "ts" | "jsx";
 }
 
 const M1 = "MODULE 01 — 土台";
@@ -40,6 +44,7 @@ const M3 = "MODULE 03 — データを自在に";
 const M4 = "MODULE 04 — 設計とモダンJS";
 const M5 = "MODULE 05 — ブラウザとDOM";
 const M6 = "MODULE 06 — TypeScript";
+const M7 = "MODULE 07 — React / Next.js";
 
 export const lessons: Lesson[] = [
   {
@@ -1604,12 +1609,599 @@ users.forEach((u) => {
         logs.some((l) => /件/.test(l.text) && !/0件/.test(l.text)),
     },
   },
+
+  // ── MODULE 07 — React / Next.js ─────────────────────────────
+  // lang: "jsx" のレッスンは JSX を JavaScript に変換し、React を読み込んだ
+  // プレビュー iframe で実行する。React / useState / useEffect は import 不要で使える。
+  {
+    id: "react-intro", module: M7, title: "React — 画面を組み立て直す",
+    lang: "jsx",
+    preview: { html: `<div id="root"></div>` },
+    paras: [
+      "MODULE 05 では、状態を変えたら render を呼んで画面を描き直した。あの手作業を、仕組みとして引き受けてくれるのが React。",
+      "React では画面を「コンポーネント」という部品の関数として書く。関数が返すのは、見た目そのもの——HTML によく似た JSX という書き方で、JavaScript の中に直接書ける。",
+      "状態が変われば、React が「変わった部分だけ」を自動で描き直す。document.querySelector も appendChild も、もう書かない。何を表示したいかだけを書けばいい。",
+    ],
+    points: [
+      "コンポーネント = 見た目を返す関数（名前は大文字始まり）",
+      "createRoot(...).render(<App />) で画面に載せる",
+      "codelog では React / useState は import なしで使える（実務では import する）",
+    ],
+    example: `function App() {
+  return <h1>はじめての React</h1>;
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);`,
+    task: {
+      prompt: "App コンポーネントの中身を、見出しと文章の2つの要素にしてみよう（複数書くときは全体を <div> で包む）。",
+      starter: `function App() {
+  return <h1>はじめての React</h1>;
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);`,
+      hint: "return ( <div><h1>タイトル</h1><p>本文</p></div> ); のように、全体を1つのタグで包む。",
+      check: (logs, code, dom) =>
+        /root\.render/.test(code) && !!dom && /<h1/.test(dom) && /<p/.test(dom),
+    },
+  },
+  {
+    id: "react-jsx", module: M7, title: "JSX — HTML の中に JavaScript を書く",
+    lang: "jsx",
+    preview: { html: `<div id="root"></div>` },
+    paras: [
+      "JSX は HTML に見えるが、中身は JavaScript。{ } で囲めば、その中に変数でも式でも書ける。文字列を組み立てる必要はなく、値をそのまま置ける。",
+      "HTML と少しだけ違う点がある。class は className、for は htmlFor と書く（class も for も JavaScript の予約語だから）。閉じタグのない要素は <img /> のように自分で閉じる。",
+      "返せる要素は1つだけ。複数並べたいときは <div> で包むか、余計なタグを増やしたくなければ <> </>（フラグメント）で包む。",
+    ],
+    points: [
+      "{ } の中は JavaScript（変数・計算・関数呼び出しなんでも）",
+      "class → className、閉じタグは必須",
+      "返すのは1要素。複数なら <div> か <> </> で包む",
+    ],
+    example: `function App() {
+  const name = "りーたん";
+  const hour = 9;
+
+  return (
+    <div className="card">
+      <h1>こんにちは、{name}さん</h1>
+      <p>いまは {hour} 時。{hour < 12 ? "午前" : "午後"}です。</p>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);`,
+    task: {
+      prompt: "変数 price（数値）を作り、税込み価格を JSX の中で計算して表示しよう。",
+      starter: `function App() {
+  const price = 1000;
+
+  return (
+    <div className="card">
+      <h1>コーヒー</h1>
+      {/* TODO: 税込み価格（10%）を表示する */}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);`,
+      hint: "<p>税込み {Math.round(price * 1.1)} 円</p> のように、{ } の中で計算できる。",
+      check: (logs, code, dom) => !!dom && /1100/.test(dom),
+    },
+  },
+  {
+    id: "react-props", module: M7, title: "props — 部品に値を渡す",
+    lang: "jsx",
+    preview: { html: `<div id="root"></div>` },
+    paras: [
+      "コンポーネントは部品なので、使い回せてこそ意味がある。外から値を渡す口が props。<Card title=\"コーヒー\" /> のように属性として渡すと、関数の引数として受け取れる。",
+      "受け取り側は分割代入で書くのが定番。function Card({ title, price }) と書けば、そのまま title と price が使える。",
+      "props は「上から下へ」渡す一方通行。子が親の値を勝手に書き換えることはできない。この一方通行が、データの流れを追いやすくしている。",
+    ],
+    points: [
+      "渡す: <Card title=\"コーヒー\" price={500} />（数値は { } で）",
+      "受け取る: function Card({ title, price })",
+      "props は読み取り専用。子から書き換えない",
+    ],
+    example: `function Card({ title, price }) {
+  return (
+    <div className="card">
+      <strong>{title}</strong> — {price}円
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <div>
+      <Card title="コーヒー" price={500} />
+      <Card title="紅茶" price={450} />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);`,
+    task: {
+      prompt: "Card に stock（在庫数）も渡して表示しよう。カードは3枚以上並べてみて。",
+      starter: `function Card({ title, price }) {
+  return (
+    <div className="card">
+      <strong>{title}</strong> — {price}円
+      {/* TODO: 在庫数も表示する */}
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <div>
+      <Card title="コーヒー" price={500} />
+      <Card title="紅茶" price={450} />
+      {/* TODO: もう1枚足す */}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);`,
+      hint: "受け取り側を ({ title, price, stock }) にして、呼ぶ側で stock={12} のように渡す。",
+      check: (logs, code, dom) =>
+        /stock/.test(code) && !!dom && (dom.match(/class="card"/g) ?? []).length >= 3,
+    },
+  },
+  {
+    id: "react-list", module: M7, title: "リストと key",
+    lang: "jsx",
+    preview: { html: `<div id="root"></div>` },
+    paras: [
+      "配列から一覧を作るときは map を使う。JSX を返す map の結果を、そのまま { } の中に置けば並ぶ——MODULE 05 で createElement と appendChild で書いたことが、1行になる。",
+      "このとき各要素に key を付ける。key は React が「どれがどれか」を見分けるための目印で、並び替えや削除のときに正しい要素を残すために使う。",
+      "key には配列のインデックスではなく、データが持つ一意の値（id）を使うのが原則。インデックスだと、並び替えたときに中身が入れ替わるバグの温床になる。",
+    ],
+    points: [
+      "{items.map((item) => <li key={item.id}>{item.name}</li>)}",
+      "key は id を使う（index は避ける）",
+      "map の中で JSX を返す。忘れがちな return に注意",
+    ],
+    example: `const items = [
+  { id: 1, name: "コーヒー" },
+  { id: 2, name: "紅茶" },
+  { id: 3, name: "ココア" },
 ];
 
-export const roadmap = [
-  "Module 07 — React / Next.js",
-  "Module 08 — 個人開発の実践",
+function App() {
+  return (
+    <ul>
+      {items.map((item) => (
+        <li key={item.id}>{item.name}</li>
+      ))}
+    </ul>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);`,
+    task: {
+      prompt: "配列 tasks を map で描画しよう（key も忘れずに）。",
+      starter: `const tasks = [
+  { id: 1, title: "朝ラン", done: true },
+  { id: 2, title: "買い物", done: false },
+  { id: 3, title: "読書", done: false },
 ];
+
+function App() {
+  return (
+    <ul>
+      {/* TODO: tasks を map で li にする */}
+    </ul>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);`,
+      hint: "{tasks.map((t) => <li key={t.id}>{t.title}</li>)} — done で className={t.done ? \"done\" : \"\"} を出し分けても面白い。",
+      check: (logs, code, dom) =>
+        /map/.test(code) && /key=/.test(code) && !!dom && (dom.match(/<li/g) ?? []).length >= 3,
+    },
+  },
+  {
+    id: "react-state", module: M7, title: "useState — 状態を持つ",
+    lang: "jsx",
+    preview: { html: `<div id="root"></div>` },
+    paras: [
+      "ここが React の心臓部。useState は「変わる値」をコンポーネントに持たせるための道具で、値と、それを更新する関数の2つを返す。",
+      "const [count, setCount] = useState(0) と書くと、count が今の値、setCount が更新関数。setCount を呼ぶと、React はその部分だけを自動で描き直す——MODULE 05 で自分の手で呼んでいた render が、もう要らない。",
+      "大事なルール: count = count + 1 のように直接書き換えても、React は気づかず画面は変わらない。必ず setCount 経由で更新する。",
+    ],
+    points: [
+      "const [値, 更新関数] = useState(初期値)",
+      "更新すると、その部分だけ自動で描き直される",
+      "直接代入は効かない。必ず更新関数を通す",
+    ],
+    example: `function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div>
+      <p>カウント: {count}</p>
+      <button onClick={() => setCount(count + 1)}>+1</button>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<Counter />);`,
+    task: {
+      prompt: "-1 ボタンと、0 に戻すリセットボタンを足そう。実行したら、プレビューで実際に押してみて。",
+      starter: `function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div>
+      <p>カウント: {count}</p>
+      <button onClick={() => setCount(count + 1)}>+1</button>
+      {/* TODO: -1 ボタンとリセットボタン */}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<Counter />);`,
+      hint: "<button onClick={() => setCount(count - 1)}>-1</button> と、setCount(0) を呼ぶボタン。",
+      check: (logs, code, dom) =>
+        /useState/.test(code) && /setCount\(0\)/.test(code) &&
+        !!dom && /カウント: -?[1-9]/.test(dom),
+    },
+  },
+  {
+    id: "react-event", module: M7, title: "イベントと、状態の正しい更新",
+    lang: "jsx",
+    preview: { html: `<div id="root"></div>` },
+    paras: [
+      "React のイベントは onClick / onChange のように属性として書く。渡すのは関数そのもの（onClick={handleClick}）で、呼び出した結果ではない（onClick={handleClick()} だと即実行されてしまう、よくある間違い）。",
+      "状態の更新でひとつ落とし穴がある。setCount(count + 1) を連続で2回書いても、2つ増えない。どちらの count も「その時点の古い値」を見ているから。",
+      "そういうときは setCount((prev) => prev + 1) と、前の値を受け取る関数を渡す。React が最新の値を渡してくれるので、確実に積み上がる。",
+    ],
+    points: [
+      "onClick={handleClick} — 関数を渡す（() を付けない）",
+      "前の値を元に更新するなら setCount((prev) => prev + 1)",
+      "更新関数の中で状態を直接読まない",
+    ],
+    example: `function App() {
+  const [count, setCount] = useState(0);
+
+  const addTwice = () => {
+    setCount((prev) => prev + 1);   // 前の値から +1
+    setCount((prev) => prev + 1);   // さらに +1 → ちゃんと2増える
+  };
+
+  return (
+    <div>
+      <p>カウント: {count}</p>
+      <button onClick={addTwice}>+2（安全な書き方）</button>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);`,
+    task: {
+      prompt: "「+3」するボタンを、前の値を使う書き方（prev）で作ろう。実行したら実際に押して確かめて。",
+      starter: `function App() {
+  const [count, setCount] = useState(0);
+
+  // TODO: 前の値を使って3増やす関数を書く
+
+  return (
+    <div>
+      <p>カウント: {count}</p>
+      {/* TODO: ボタンを置く */}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);`,
+      hint: "setCount((prev) => prev + 3); を呼ぶ関数を作り、onClick に渡す。",
+      check: (logs, code, dom) =>
+        /prev\s*\)?\s*=>/.test(code) && !!dom && /カウント: [3-9]|カウント: \d\d/.test(dom),
+    },
+  },
+  {
+    id: "react-form", module: M7, title: "フォーム — 入力を状態で持つ",
+    lang: "jsx",
+    preview: { html: `<div id="root"></div>` },
+    paras: [
+      "React では、入力欄の中身も状態として持つ。value に状態を渡し、onChange で状態を更新する——こうすると「画面に映っているもの」と「プログラムが持っている値」が常に一致する。これを制御コンポーネントと呼ぶ。",
+      "e.target.value が、いま入力された文字。MODULE 05 で input.value を直接読んでいたのと同じことを、状態を通してやっている。",
+      "この形にしておくと、入力に応じてボタンを無効にしたり、文字数を出したり、入力しながら絞り込んだりが、全部そのまま書ける。",
+    ],
+    points: [
+      "value={text} と onChange={(e) => setText(e.target.value)} をセットで",
+      "状態が唯一の正。画面はその写し",
+      "入力のたびに再描画される（それでいい）",
+    ],
+    example: `function App() {
+  const [text, setText] = useState("");
+
+  return (
+    <div>
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="名前を入力"
+      />
+      <p>こんにちは、{text || "名無し"}さん（{text.length}文字）</p>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);`,
+    task: {
+      prompt: "入力が空のときは送信ボタンを押せないようにしよう（disabled を使う）。実行したら入力して確かめて。",
+      starter: `function App() {
+  const [text, setText] = useState("");
+
+  return (
+    <div>
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="ひとこと"
+      />
+      {/* TODO: 空のときは押せない送信ボタン */}
+      <p>入力中: {text}</p>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);`,
+      hint: "<button disabled={text === \"\"}>送信</button> — 状態を見て見た目を変えられる。",
+      check: (logs, code, dom) =>
+        /onChange/.test(code) && /disabled/.test(code) && !!dom && /入力中: \S/.test(dom),
+    },
+  },
+  {
+    id: "react-effect", module: M7, title: "useEffect — 外の世界とつなぐ",
+    lang: "jsx",
+    preview: { html: `<div id="root"></div>` },
+    paras: [
+      "データの取得やタイマーのような「画面の外とのやりとり」は、描画のついでにやってはいけない。そのための専用の場所が useEffect。",
+      "useEffect(() => { ... }, []) と書くと、中の処理は「最初の描画のあと1回だけ」走る。第2引数の配列は依存リストで、ここに入れた値が変わるたびに再実行される（空配列なら最初の1回だけ）。",
+      "取得中は「読み込み中…」を出す。この待ち時間の設計まで含めて、はじめてアプリになる。",
+    ],
+    points: [
+      "useEffect(() => { 処理 }, [])：最初の1回だけ",
+      "取得したデータは useState に入れる → 自動で描き直される",
+      "loading 状態も持つと親切",
+    ],
+    example: `function App() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchUsers().then((data) => {
+      setUsers(data);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return <p>読み込み中…</p>;
+
+  return (
+    <ul>
+      {users.map((u) => (
+        <li key={u.name}>{u.name}（{u.age}歳）</li>
+      ))}
+    </ul>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);`,
+    task: {
+      prompt: "fetchPosts() で投稿一覧を取得して、「タイトル — 著者」の形で並べよう（読み込み中の表示も出す）。",
+      starter: `function App() {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // TODO: fetchPosts() で取得して posts に入れ、loading を false にする
+  }, []);
+
+  if (loading) return <p>読み込み中…</p>;
+
+  return (
+    <ul>
+      {/* TODO: posts を map で並べる */}
+    </ul>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);`,
+      hint: "fetchPosts().then((data) => { setPosts(data); setLoading(false); }); — key は title でいい。",
+      check: (logs, code, dom) =>
+        /useEffect/.test(code) && /fetchPosts/.test(code) &&
+        !!dom && (dom.match(/<li/g) ?? []).length >= 5,
+    },
+  },
+  {
+    id: "react-lift", module: M7, title: "状態を持ち上げる — 部品どうしで共有する",
+    lang: "jsx",
+    preview: { html: `<div id="root"></div>` },
+    paras: [
+      "2つの部品が同じデータを見たいとき、どちらかが状態を持つとうまくいかない。答えはシンプルで、共通の親に状態を持たせ、値と更新関数を props で配る。これを「状態を持ち上げる（lifting state up）」と呼ぶ。",
+      "子は状態を持たず、渡された値を表示し、渡された関数を呼ぶだけ。データは親から下へ、変更の合図は関数を通じて上へ——流れが一方向に整理される。",
+      "React アプリの設計は、ほとんどこの判断の連続。「この状態は誰が持つべきか」を考えるのが、React の設計そのもの。",
+    ],
+    points: [
+      "共有したい状態は、共通の親に置く",
+      "子には値と「更新する関数」を props で渡す",
+      "子は状態を持たない（表示と通知に徹する）",
+    ],
+    example: `function Display({ count }) {
+  return <p>いまのカウント: {count}</p>;
+}
+
+function Controls({ onAdd }) {
+  return <button onClick={onAdd}>+1</button>;
+}
+
+function App() {
+  const [count, setCount] = useState(0);   // 親が状態を持つ
+
+  return (
+    <div>
+      <Display count={count} />
+      <Controls onAdd={() => setCount((prev) => prev + 1)} />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);`,
+    task: {
+      prompt: "Controls に「-1」ボタンも足そう（状態は親のまま、関数を渡して実現する）。実行したら押して確かめて。",
+      starter: `function Display({ count }) {
+  return <p>いまのカウント: {count}</p>;
+}
+
+function Controls({ onAdd }) {
+  return (
+    <div>
+      <button onClick={onAdd}>+1</button>
+      {/* TODO: -1 ボタン。必要な関数は props で受け取る */}
+    </div>
+  );
+}
+
+function App() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div>
+      <Display count={count} />
+      <Controls onAdd={() => setCount((prev) => prev + 1)} />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);`,
+      hint: "Controls を ({ onAdd, onSub }) にして、App から onSub={() => setCount((prev) => prev - 1)} を渡す。",
+      check: (logs, code, dom) =>
+        /onSub|onMinus|onDown|onDecrement/.test(code) &&
+        !!dom && /いまのカウント: -[1-9]/.test(dom),
+    },
+  },
+  {
+    id: "react-todo", module: M7, title: "ミニ演習 — TODOアプリを React で",
+    lang: "jsx",
+    preview: { html: `<div id="root"></div>` },
+    paras: [
+      "MODULE 05 で作った TODO アプリを、React で作り直す。同じ題材だからこそ、違いがはっきり見える——querySelector も createElement も appendChild も、1行も出てこない。",
+      "書くのは「状態」と「状態からどう見えるか」だけ。追加ボタンは配列に足すだけで、画面は React が勝手に追いつく。これが、あの手作業の正体だった。",
+      "ここまで書けたら、React の基礎はもう手の内にある。次はこれを本物のアプリとして世に出す番（MODULE 08）。",
+    ],
+    points: [
+      "TODO は2か所（追加の処理と、削除の処理）",
+      "配列の更新は「新しい配列を作って渡す」（push ではなく [...todos, 新しいの]）",
+      "削除は filter で「残すものだけ」の配列を作る",
+    ],
+    example: `// 配列の状態は「新しい配列」で更新する（元の配列を書き換えない）
+setTodos([...todos, { id: Date.now(), text }]);          // 追加
+setTodos(todos.filter((t) => t.id !== id));              // 削除`,
+    task: {
+      prompt: "TODO の追加と削除を完成させよう。実行したら、実際に入力して追加・削除してみて。",
+      starter: `function App() {
+  const [todos, setTodos] = useState([]);
+  const [text, setText] = useState("");
+
+  const add = () => {
+    if (text === "") return;
+    // TODO: todos に { id, text } を足して、入力欄を空にする
+  };
+
+  const remove = (id) => {
+    // TODO: id が一致しないものだけを残す
+  };
+
+  return (
+    <div>
+      <h2>TODO（React版）</h2>
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="やることを入力"
+      />
+      <button onClick={add}>追加</button>
+      <ul>
+        {todos.map((t) => (
+          <li key={t.id}>
+            {t.text}
+            <button onClick={() => remove(t.id)}>削除</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);`,
+      hint: "add: setTodos([...todos, { id: Date.now(), text }]); setText(\"\"); / remove: setTodos(todos.filter((t) => t.id !== id));",
+      check: (logs, code, dom) =>
+        /setTodos/.test(code) && /filter/.test(code) &&
+        !!dom && (dom.match(/<li/g) ?? []).length >= 1,
+    },
+  },
+  {
+    id: "next-intro", module: M7, title: "Next.js — React でサイトを作る",
+    lang: "jsx",
+    preview: { html: `<div id="root"></div>` },
+    paras: [
+      "React はあくまで「画面を組み立てる道具」。ページを分ける仕組みも、サーバー側の処理も、公開の仕組みも持っていない。それらをまとめて用意してくれるのが Next.js——いま読んでいるこの codelog も Next.js で動いている。",
+      "Next.js の中心はファイル構成。app/page.jsx がトップページ、app/lessons/[id]/page.jsx が /lessons/vars のようなページになる。ルーティング（URL と画面の対応づけ）を自分で書く必要はない。",
+      "もうひとつの柱がサーバーとクライアントの分担。既定ではサーバー側で HTML を組み立てて返し（速くて SEO に強い）、useState のように「操作に反応する」部分だけ \"use client\" と書いてブラウザ側で動かす。AIチューターの API（app/api/tutor）も、この仕組みでサーバー側にキーを隠している。",
+    ],
+    points: [
+      "ファイル = URL（app/about/page.jsx → /about）",
+      "既定はサーバー側で描画。対話する部分だけ \"use client\"",
+      "API もページも同じプロジェクトに置ける（app/api/...）",
+    ],
+    example: `// Next.js のページはこんな形（app/page.jsx）
+"use client";                      // 状態を使うのでクライアント側
+
+export default function Page() {
+  const [tab, setTab] = useState("home");
+  return (
+    <div>
+      <button onClick={() => setTab("home")}>ホーム</button>
+      <button onClick={() => setTab("about")}>このサイトについて</button>
+      {tab === "home" ? <p>ようこそ</p> : <p>codelog について</p>}
+    </div>
+  );
+}`,
+    task: {
+      prompt: "タブを3つに増やして、選んだタブの内容が切り替わる画面を作ろう（Next.js のページ切り替えの気持ちを掴む）。実行したら押して確かめて。",
+      starter: `function Page() {
+  const [tab, setTab] = useState("home");
+
+  return (
+    <div>
+      <button onClick={() => setTab("home")}>ホーム</button>
+      <button onClick={() => setTab("about")}>このサイトについて</button>
+      {/* TODO: 3つ目のタブを足す */}
+
+      <div className="card">
+        {tab === "home" && <p>ようこそ</p>}
+        {/* TODO: 残りのタブの中身 */}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<Page />);`,
+      hint: "setTab(\"contact\") のようなボタンを足し、{tab === \"contact\" && <p>お問い合わせ</p>} を並べる。",
+      check: (logs, code, dom) =>
+        (code.match(/setTab\(/g) ?? []).length >= 3 &&
+        !!dom && /<button/.test(dom) && !/ようこそ/.test(dom),
+    },
+  },
+];
+
+export const roadmap = ["Module 08 — 個人開発の実践"];
 
 export function getLesson(id: string): Lesson | undefined {
   return lessons.find((l) => l.id === id);

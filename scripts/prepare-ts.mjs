@@ -1,15 +1,21 @@
-// TypeScript レッスン（MODULE 06）用の準備スクリプト。
+// レッスンの実行環境をブラウザに用意するスクリプト。
 //
-// ブラウザの中で本物の tsc に型チェックさせるため、node_modules から
-//   - typescript.js（コンパイラ本体）
+// MODULE 06（TypeScript）用に node_modules から
+//   - typescript.js（コンパイラ本体。型チェックと JSX 変換に使う）
 //   - 標準ライブラリの型定義（lib.*.d.ts）を1つに束ねたもの
-// を public/vendor/ts/ にコピーする。
+//   - 型エラーの日本語訳
+// を public/vendor/ts/ に、
+//
+// MODULE 07（React）用に
+//   - React / ReactDOM をブラウザのグローバルとして使える1ファイル
+// を public/vendor/react/ に用意する。
 //
 // public/vendor/ は生成物なので git 管理しない。npm run dev / build の前に自動で走る。
 
 import { createRequire } from "node:module";
 import { mkdir, readFile, writeFile, copyFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import * as esbuild from "esbuild";
 
 const require = createRequire(import.meta.url);
 const tsLibDir = dirname(require.resolve("typescript/lib/typescript.js"));
@@ -61,5 +67,32 @@ declare function fetchPosts(): Promise<{ author: string; title: string }[]>;
 await writeFile(join(outDir, "lib.bundle.d.ts"), parts.join("\n"), "utf8");
 
 console.log(
-  `prepare-ts: typescript.js と lib.bundle.d.ts を public/vendor/ts/ に用意しました（lib ${LIB_FILES.length} ファイル）`
+  `prepare: typescript.js と lib.bundle.d.ts を public/vendor/ts/ に用意しました（lib ${LIB_FILES.length} ファイル）`
 );
+
+// ── React（MODULE 07）
+// React 19 は UMD 版を配布していないので、esbuild でブラウザ向けに1つに束ねる。
+// プレビュー iframe から <script> で読み込み、React / ReactDOM をグローバルとして使う。
+const reactOutDir = new URL("../public/vendor/react/", import.meta.url).pathname;
+await mkdir(reactOutDir, { recursive: true });
+
+await esbuild.build({
+  stdin: {
+    contents: `
+      import * as React from "react";
+      import { createRoot } from "react-dom/client";
+      globalThis.React = React;
+      globalThis.ReactDOM = { createRoot };
+    `,
+    resolveDir: new URL("..", import.meta.url).pathname,
+    loader: "js",
+  },
+  bundle: true,
+  format: "iife",
+  minify: true,
+  define: { "process.env.NODE_ENV": '"production"' },
+  outfile: join(reactOutDir, "react.js"),
+  logLevel: "warning",
+});
+
+console.log("prepare: React / ReactDOM を public/vendor/react/react.js に束ねました");
