@@ -49,6 +49,11 @@ self.onmessage = async (e) => {
       "alert",
       "fetchUsers",
       "fetchPosts",
+      "React",
+      "ReactDOM",
+      "useState",
+      "useEffect",
+      "useRef",
       `return (async () => {\n${code}\n})();`
     );
     await fn(
@@ -57,7 +62,12 @@ self.onmessage = async (e) => {
       makeStub(),
       noop,
       fetchUsers,
-      fetchPosts
+      fetchPosts,
+      makeStub(),
+      makeStub(),
+      () => [makeStub(), noop], // useState のダミー
+      noop,
+      () => makeStub()
     );
   } catch {
     // 試走中のエラーは無視する（本番の iframe 実行でエラーを出して学習者に見せる）

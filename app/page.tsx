@@ -24,7 +24,7 @@ export default function Home() {
         <p className="mt-4 max-w-[560px] text-[15.5px] leading-[1.85] text-sub">
           ブラウザの上でそのままコードを書いて実行できる、無料の JavaScript
           学習サイト。全{moduleCount}モジュール・{lessons.length}
-          レッスンを順番に進めるだけで、変数から非同期処理、そして自分の手で動く画面を作るところまで進める。
+          レッスンを順番に進めるだけで、変数から非同期処理、DOM、TypeScript、React まで——個人開発を始められるところまで進める。
         </p>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -49,8 +49,8 @@ export default function Home() {
               その場で実行
             </div>
             <p className="mt-1.5 text-[13.5px] leading-relaxed text-sub">
-              エディタに書いたコードをブラウザ内で安全に実行。DOM
-              編では書いた瞬間に本物の画面が動き、ボタンや入力もその場で触れる。
+              エディタに書いたコードをブラウザ内で安全に実行。DOM・React
+              編では本物の画面が動き、TypeScript 編では本物の型チェックが走る。
             </p>
           </div>
           <div className="rounded-2xl border border-line bg-card p-5">
@@ -59,7 +59,7 @@ export default function Home() {
               体系的なカリキュラム
             </div>
             <p className="mt-1.5 text-[13.5px] leading-relaxed text-sub">
-              土台 → 一歩深く → データ処理 → 設計とモダンJS → ブラウザとDOM。
+              JSの土台 → データ処理 → 設計 → DOM → TypeScript → React。
               {lessons.length}レッスンを積み上げ式で。進捗は自動保存。
             </p>
           </div>

@@ -1466,6 +1466,110 @@ const user: User = { name: "Aoi", age: 24 };`,
     lessonIds: ["ts-intro"],
     aliases: ["tsc", "コンパイル"],
   },
+
+  // ── MODULE 07（React / Next.js）で登場する用語 ──
+  {
+    slug: "react",
+    term: "React",
+    category: "Web",
+    oneLiner: "画面を「部品の関数」として書き、状態が変われば自動で描き直すライブラリ。",
+    description:
+      "Meta 発の UI ライブラリで、現在のフロントエンドの事実上の標準。querySelector や appendChild を書く代わりに、「この状態のとき画面はこう見える」だけを宣言する。状態が変われば、React が差分を計算して必要な部分だけ描き直してくれる。",
+    lessonIds: ["react-intro"],
+  },
+  {
+    slug: "component",
+    term: "コンポーネント",
+    category: "設計",
+    oneLiner: "見た目を返す関数。React の画面はこの部品の組み合わせでできている。",
+    description:
+      "function Card() { return <div>…</div> } のように、JSX を返す関数がコンポーネント。名前は必ず大文字で始める（小文字だと普通の HTML タグとして扱われる）。小さく切って組み合わせるほど、読みやすく再利用しやすくなる。",
+    lessonIds: ["react-intro", "react-props"],
+  },
+  {
+    slug: "jsx",
+    term: "JSX",
+    category: "Web",
+    oneLiner: "JavaScript の中に HTML のような書き方で画面を書ける記法。",
+    description:
+      "<h1>{name}さん</h1> のように書ける。{ } の中には JavaScript の式をそのまま置ける。ブラウザは JSX を直接読めないため、実行前に React.createElement() の呼び出しへ変換される（codelog もブラウザの中で変換してから動かしている）。class ではなく className と書く点に注意。",
+    lessonIds: ["react-jsx"],
+  },
+  {
+    slug: "props",
+    term: "props",
+    category: "設計",
+    oneLiner: "親から子コンポーネントへ渡す値。読み取り専用。",
+    description:
+      "<Card title=\"コーヒー\" price={500} /> のように属性として渡し、function Card({ title, price }) で受け取る。データは親から子への一方通行で、子が勝手に書き換えることはできない。この一方通行が、データの流れを追いやすくしている。",
+    lessonIds: ["react-props"],
+  },
+  {
+    slug: "use-state",
+    term: "useState",
+    category: "Web",
+    oneLiner: "コンポーネントに「変わる値」を持たせるフック。React の心臓部。",
+    description:
+      "const [count, setCount] = useState(0) と書くと、count が今の値、setCount が更新関数。setCount を呼ぶと React がその部分だけ自動で描き直す。直接 count = 1 と代入しても画面は変わらない——必ず更新関数を通す。前の値を元に更新するなら setCount((prev) => prev + 1) の形が安全。",
+    lessonIds: ["react-state", "react-event"],
+  },
+  {
+    slug: "use-effect",
+    term: "useEffect",
+    category: "Web",
+    oneLiner: "データ取得やタイマーなど「画面の外とのやりとり」を書く場所。",
+    description:
+      "useEffect(() => { 処理 }, []) と書くと、最初の描画のあとに1回だけ実行される。第2引数は依存リストで、ここに入れた値が変わるたびに再実行される。取得したデータは useState に入れれば、画面は自動で追いつく。",
+    lessonIds: ["react-effect"],
+  },
+  {
+    slug: "hook",
+    term: "フック",
+    category: "Web",
+    oneLiner: "use から始まる React の機能。状態や副作用をコンポーネントに足す。",
+    description:
+      "useState、useEffect、useRef などの総称。ルールがひとつだけあり、「コンポーネントの一番外側で、毎回同じ順番で呼ぶ」こと（if の中や、ループの中で呼ばない）。React は呼ばれた順番で状態を管理しているため。",
+    lessonIds: ["react-state"],
+    aliases: ["hooks", "Hooks"],
+  },
+  {
+    slug: "react-key",
+    term: "key（Reactの）",
+    category: "Web",
+    oneLiner: "リストの各要素につける目印。id を使うのが原則。",
+    description:
+      "{items.map((item) => <li key={item.id}>…</li>)} の key は、React が「どれがどれか」を見分けるためのもの。並び替えや削除のときに、正しい要素を残すために使われる。配列のインデックスを key にすると、並びが変わったときに中身が入れ替わるバグの原因になる。",
+    lessonIds: ["react-list"],
+  },
+  {
+    slug: "lifting-state-up",
+    term: "状態を持ち上げる",
+    category: "設計",
+    oneLiner: "複数の部品で共有したい状態は、共通の親に置く。",
+    description:
+      "2つの子コンポーネントが同じデータを見たいとき、共通の親が状態を持ち、値と更新関数を props で配る（lifting state up）。子は表示と通知に徹し、状態を持たない。「この状態は誰が持つべきか」を考えることが、React の設計そのもの。",
+    lessonIds: ["react-lift"],
+    aliases: ["lifting state up"],
+  },
+  {
+    slug: "nextjs",
+    term: "Next.js",
+    category: "Web",
+    oneLiner: "React でサイトを作るためのフレームワーク。codelog もこれで動いている。",
+    description:
+      "React は画面を組み立てる道具でしかないので、ページの分け方（ルーティング）、サーバー側の処理、公開の仕組みは自前になる。Next.js はそれらをまとめて提供する。app/page.jsx がトップ、app/about/page.jsx が /about——ファイル構成がそのまま URL になる。既定ではサーバー側で HTML を組み立てて返し、操作に反応する部分だけ \"use client\" と書いてブラウザ側で動かす。",
+    lessonIds: ["next-intro"],
+    aliases: ["App Router", "use client"],
+  },
+  {
+    slug: "routing",
+    term: "ルーティング",
+    category: "Web",
+    oneLiner: "URL と、表示する画面の対応づけ。",
+    description:
+      "/lessons/vars を開いたらどの画面を出すか、という対応を決める仕組み。Next.js ではファイルの置き場所がそのまま URL になるので、自分で対応表を書く必要がない（app/lessons/[id]/page.tsx → /lessons/なんでも）。",
+    lessonIds: ["next-intro"],
+  },
 ];
 
 export function getTerm(slug: string): GlossaryTerm | undefined {
