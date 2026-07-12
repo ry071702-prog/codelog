@@ -13,10 +13,20 @@ import { ConsoleOutput } from "@/components/ConsoleOutput";
 import { DomPreview } from "@/components/DomPreview";
 import { TermText } from "@/components/TermText";
 import { TutorPanel } from "@/components/TutorPanel";
+import { Checklist } from "@/components/Checklist";
+import { ShareButtons } from "@/components/ShareButtons";
 
 export function LessonContent({ lessonId }: { lessonId: string }) {
   const router = useRouter();
-  const { codeByLesson, setCodeFor, markCompleted } = useProgress();
+  const {
+    codeByLesson,
+    setCodeFor,
+    markCompleted,
+    checksByLesson,
+    toggleCheck,
+    previewStore,
+    setPreviewStoreFor,
+  } = useProgress();
 
   const idx = lessons.findIndex((l) => l.id === lessonId);
   const lesson = lessons[idx];
@@ -47,10 +57,11 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
-  const code = codeByLesson[lessonId] ?? lesson.task.starter;
+  const code = codeByLesson[lessonId] ?? lesson.task?.starter ?? "";
+  const checked = checksByLesson[lessonId] ?? [];
 
   const evaluate = useCallback(() => {
-    if (clearedRef.current) return;
+    if (clearedRef.current || !lesson.task) return;
     if (lesson.task.check(logsRef.current, code, domRef.current)) {
       clearedRef.current = true;
       setCleared(true);
@@ -118,13 +129,16 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
     }
     const nextRun = runId + 1;
     setSrcDoc(
-      buildSrcDoc(lesson.preview, runnable, nextRun, { react: isReact })
+      buildSrcDoc(lesson.preview, runnable, nextRun, {
+        react: isReact,
+        storage: previewStore[lessonId] ?? {},
+      })
     );
     setRunId(nextRun); // running は iframe の done で下ろす
   };
 
   const handleReset = () => {
-    setCodeFor(lessonId, lesson.task.starter);
+    setCodeFor(lessonId, lesson.task?.starter ?? "");
     resetRun();
     setRan(false);
     setRunId(0);
@@ -133,6 +147,17 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
 
   const handleNext = () => {
     if (nextLesson) router.push(`/lessons/${nextLesson.id}`);
+  };
+
+  // チェックリスト型（MODULE 08）: 全部チェックできたらクリア
+  const handleToggleCheck = (index: number) => {
+    toggleCheck(lessonId, index);
+    const next = checked.includes(index)
+      ? checked.filter((i) => i !== index)
+      : [...checked, index];
+    const allDone = !!lesson.checklist && next.length === lesson.checklist.length;
+    setCleared(allDone);
+    if (allDone) markCompleted(lesson.id);
   };
 
   // ── プレビューからの通知（実行後のクリックなどでも届き続ける）
@@ -151,6 +176,13 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
       evaluate();
     },
     [evaluate]
+  );
+
+  const handlePreviewStorage = useCallback(
+    (store: Record<string, string>) => {
+      setPreviewStoreFor(lessonId, store);
+    },
+    [lessonId, setPreviewStoreFor]
   );
 
   const handlePreviewDone = useCallback(() => {
@@ -196,27 +228,39 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
         {lesson.example}
       </pre>
 
-      <div className="mb-4 rounded-[14px] bg-accent-soft px-[18px] py-4">
-        <div className="mb-1.5 text-[12.5px] font-bold tracking-wide text-accent">
-          やってみよう
-        </div>
-        <div className="text-[15.5px] leading-relaxed text-ink">
-          {lesson.task.prompt}
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowHint((s) => !s)}
-          className="mt-3 flex items-center gap-1.5 text-[13px] font-semibold text-accent"
-        >
-          <Lightbulb size={14} /> {showHint ? "ヒントを閉じる" : "ヒントを見る"}
-        </button>
-        {showHint && (
-          <div className="mt-2 text-[13.5px] leading-relaxed text-sub">
-            {lesson.task.hint}
+      {lesson.task && (
+        <div className="mb-4 rounded-[14px] bg-accent-soft px-[18px] py-4">
+          <div className="mb-1.5 text-[12.5px] font-bold tracking-wide text-accent">
+            やってみよう
           </div>
-        )}
-      </div>
+          <div className="text-[15.5px] leading-relaxed text-ink">
+            {lesson.task.prompt}
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowHint((s) => !s)}
+            className="mt-3 flex items-center gap-1.5 text-[13px] font-semibold text-accent"
+          >
+            <Lightbulb size={14} /> {showHint ? "ヒントを閉じる" : "ヒントを見る"}
+          </button>
+          {showHint && (
+            <div className="mt-2 text-[13.5px] leading-relaxed text-sub">
+              {lesson.task.hint}
+            </div>
+          )}
+        </div>
+      )}
 
+      {lesson.checklist && (
+        <Checklist
+          items={lesson.checklist}
+          checked={checked}
+          onToggle={handleToggleCheck}
+        />
+      )}
+
+      {lesson.task && (
+        <>
       <CodeEditor
         value={code}
         fileName={
@@ -240,12 +284,17 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
           onLog={handlePreviewLog}
           onDom={handlePreviewDom}
           onDone={handlePreviewDone}
+          onStorage={handlePreviewStorage}
         />
       )}
 
       <ConsoleOutput logs={output} ran={ran} />
+        </>
+      )}
 
-      <TutorPanel lessonId={lessonId} code={code} logs={output} />
+      {lesson.task && (
+        <TutorPanel lessonId={lessonId} code={code} logs={output} />
+      )}
 
       {cleared && (
         <div className="mt-[22px] flex items-start gap-3 rounded-[14px] border border-ok/20 bg-ok-soft px-[18px] py-4">
@@ -269,6 +318,18 @@ export function LessonContent({ lessonId }: { lessonId: string }) {
               >
                 次のレッスンへ <ArrowRight size={15} />
               </button>
+            )}
+
+            {/* 区切りのいいところ（モジュール完走・全完走）でだけシェアを出す */}
+            {(isLastLesson || isModuleEnd) && (
+              <ShareButtons
+                text={
+                  isLastLesson
+                    ? "codelog を完走しました。JavaScript の基礎から DOM・TypeScript・React、そして個人開発まで走り抜けた。"
+                    : `codelog の「${lesson.module}」を完了しました。`
+                }
+                url="https://codelog-three.vercel.app"
+              />
             )}
           </div>
         </div>

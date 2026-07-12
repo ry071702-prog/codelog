@@ -19,6 +19,8 @@ interface DomPreviewProps {
   onLog: (log: Log) => void;
   onDom: (html: string) => void;
   onDone: () => void;
+  /** プレビュー内の localStorage が変わったときに、その中身を親へ預ける */
+  onStorage: (store: Record<string, string>) => void;
 }
 
 export function DomPreview({
@@ -27,12 +29,13 @@ export function DomPreview({
   onLog,
   onDom,
   onDone,
+  onStorage,
 }: DomPreviewProps) {
   // メッセージは実行完了後もずっと届く（クリックなど）。
   // 最新のコールバックを ref に写しておき、古い関数を掴んだままにしない。
-  const handlers = useRef({ onLog, onDom, onDone });
+  const handlers = useRef({ onLog, onDom, onDone, onStorage });
   useEffect(() => {
-    handlers.current = { onLog, onDom, onDone };
+    handlers.current = { onLog, onDom, onDone, onStorage };
   });
 
   useEffect(() => {
@@ -43,6 +46,8 @@ export function DomPreview({
         handlers.current.onDom(msg.html ?? "");
       } else if (msg.type === "done") {
         handlers.current.onDone();
+      } else if (msg.type === "storage") {
+        handlers.current.onStorage(msg.store ?? {});
       } else {
         handlers.current.onLog({ type: msg.type, text: msg.text ?? "" });
       }

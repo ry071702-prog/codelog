@@ -22,6 +22,32 @@ const SYSTEM_PROMPT = `あなたは JavaScript 学習サイト「codelog」の A
 - レッスンの範囲を超える質問には短く答えたうえで、今のレッスンの考え方に引き戻す
 - 励ましは短く自然に。過剰に褒めない`;
 
+// ── サーバー側のレート制限（クライアントの localStorage 制限は簡単に回避できるため）
+// サーバーレスなのでインスタンスごとのメモリ。厳密ではないが、
+// 「1人が延々と叩き続けて課金が伸びる」のを防ぐには十分に効く。
+const RATE_LIMIT = 20; // 同一IPあたり
+const RATE_WINDOW_MS = 60 * 60 * 1000; // 1時間
+const hits = new Map<string, number[]>();
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const recent = (hits.get(ip) ?? []).filter((t) => now - t < RATE_WINDOW_MS);
+  if (recent.length >= RATE_LIMIT) {
+    hits.set(ip, recent);
+    return true;
+  }
+  recent.push(now);
+  hits.set(ip, recent);
+
+  // 使われていないIPの記録は捨てる（メモリを持ち続けない）
+  if (hits.size > 5000) {
+    for (const [key, times] of hits) {
+      if (times.every((t) => now - t >= RATE_WINDOW_MS)) hits.delete(key);
+    }
+  }
+  return false;
+}
+
 interface TutorRequest {
   lessonId: string;
   code: string;
@@ -45,6 +71,15 @@ export async function POST(req: Request) {
     return Response.json(
       { error: "AIチューターは準備中です (APIキー未設定)" },
       { status: 503 }
+    );
+  }
+
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  if (isRateLimited(ip)) {
+    return Response.json(
+      { error: "質問の回数が上限に達しました。しばらく待ってからどうぞ" },
+      { status: 429 }
     );
   }
 
@@ -89,8 +124,8 @@ ${lesson.preview.html}
 モジュール: ${lesson.module}
 タイトル: ${lesson.title}
 本文: ${lesson.paras.join(" ")}
-課題: ${lesson.task.prompt}
-課題のヒント: ${lesson.task.hint}
+課題: ${lesson.task?.prompt ?? "（コードの課題はなく、自分のパソコンで手を動かす回）"}
+課題のヒント: ${lesson.task?.hint ?? "なし"}
 ${previewSection}
 # 学習者が書いたコード
 \`\`\`js
